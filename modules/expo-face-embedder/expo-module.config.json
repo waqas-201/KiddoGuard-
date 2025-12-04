@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ExpoFaceEmbedderModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.faceembedder.ExpoFaceEmbedderModule"]
+  }
+}

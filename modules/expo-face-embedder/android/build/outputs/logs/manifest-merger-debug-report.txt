@@ -1,0 +1,14 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml:1:1-2:12
+INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml:1:1-2:12
+	package
+		INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml
+uses-sdk
+INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml
+INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /home/waqas/work/my-app/KDG/modules/expo-face-embedder/android/src/main/AndroidManifest.xml
