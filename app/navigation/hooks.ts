@@ -1,6 +1,6 @@
 import { useNavigation as useNav } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { KidFlowStackParamList, LauncherStackParamList, ParentFlowStackParamList, TabsParamList } from "./types";
+import { KidFlowStackParamList, LauncherStackParamList, ParentFlowStackParamList, RootStackParamList, TabsParamList } from "./types";
 
 // Typed hooks for ParentFlow
 export const useParentFlowNavigation = () =>
@@ -17,3 +17,7 @@ export const useLauncherNavigation = () =>
 // Typed hooks for Tabs
 export const useTabsNavigation = () =>
     useNav<NativeStackNavigationProp<TabsParamList>>();
+// Typed hook for RootStack
+
+export const useRootNavigation = () =>
+    useNav<NativeStackNavigationProp<RootStackParamList>>();

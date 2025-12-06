@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="expo.modules.appmonitor">
+
+    <!-- Permissions must be declared outside <application> -->
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application>
+
+        <!-- Accessibility Service -->
+        <service
+            android:name=".KidAppAccessService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/kid_accessibility_service_config" />
+        </service>
+
+    </application>
+
+</manifest>

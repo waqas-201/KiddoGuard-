@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ExpoAppMonitorModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.appmonitor.ExpoAppMonitorModule"]
+  }
+}

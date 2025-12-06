@@ -1,0 +1,119 @@
+// SetTimeLimitScreen.tsx
+
+import { useKidFlowNavigation } from "@/app/navigation/hooks";
+import { kidDraft } from "@/storage/kid";
+import Slider from "@react-native-community/slider";
+import React from "react";
+import { StyleSheet, View } from "react-native";
+import { useMMKVNumber } from "react-native-mmkv";
+import { Button, IconButton, Text, useTheme } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+export default function SetTimeLimitScreen() {
+    const theme = useTheme();
+    const navigation = useKidFlowNavigation()
+    // MMKV hook: may return undefined initially
+    const [time, setTime] = useMMKVNumber('time', kidDraft);
+
+    // Ensure we always have a number for Slider and display
+    const safeTime = time ?? 1; // fallback to 1 hour
+
+    return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            {/* Header */}
+            <View style={styles.header}>
+                <IconButton
+                    icon="arrow-left"
+                    iconColor={theme.colors.onSurface}
+                    size={24}
+                    onPress={() => navigation.goBack()}
+                />
+                <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: "600", fontSize: 18 }}>
+                    Set Time Limit
+                </Text>
+                <View style={{ width: 48 }} />
+            </View>
+
+            {/* Main Content */}
+            <View style={styles.content}>
+                <Text variant="headlineLarge" style={{ color: theme.colors.onBackground }}>
+                    Daily Time Cap
+                </Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, marginTop: 4, textAlign: "center" }}>
+                    Set the maximum total screen time your child is allowed each day.
+                </Text>
+
+                <View style={[styles.sliderContainer, { backgroundColor: theme.colors.surface }]}>
+                    <Text variant="displayMedium" style={{ color: theme.colors.onBackground, fontWeight: "bold" }}>
+                        {Math.floor(safeTime)}h {Math.round((safeTime % 1) * 60)}m
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginTop: 4 }}>
+                        per day
+                    </Text>
+
+                    <Slider
+                        style={{ width: "100%", marginTop: 16 }}
+                        minimumValue={0}
+                        maximumValue={12}
+                        step={0.25} // 15min steps
+                        value={safeTime} // always a number
+                        minimumTrackTintColor={theme.colors.primary}
+                        maximumTrackTintColor={theme.colors.surfaceVariant || "#e0e0e0"}
+                        thumbTintColor={theme.colors.primary}
+                        onValueChange={setTime} // updates MMKV directly
+                    />
+
+                    <View style={styles.sliderLabels}>
+                        <Text style={{ color: theme.colors.onSurface }}>0h</Text>
+                        <Text style={{ color: theme.colors.onSurface }}>12h</Text>
+                    </View>
+
+                    {/* Recommended limit hint */}
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginTop: 8, textAlign: 'center' }}>
+                        Recommended for kids: 1–2h/day
+                    </Text>
+                </View>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+                <Button
+                    mode="contained"
+                    onPress={() => navigation.navigate("KidFaceScan")}
+                    style={{ width: "100%", maxWidth: 300, borderRadius: 24 }}
+                    contentStyle={{ height: 48 }}
+                    labelStyle={{ color: theme.colors.onPrimary, fontWeight: "700", fontSize: 16 }}
+                >
+                    Save
+                </Button>
+            </View>
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1, justifyContent: "space-between", padding: 24 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+    content: { flex: 1, alignItems: "center", justifyContent: "flex-start", gap: 16 },
+    sliderContainer: {
+        width: "100%",
+        maxWidth: 300,
+        borderRadius: 16,
+        padding: 24,
+        marginTop: 16,
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 2,
+        alignItems: "center",
+        position: "relative",
+    },
+    sliderLabels: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "100%",
+        marginTop: 8,
+    },
+    footer: { width: "100%", alignItems: "center", marginBottom: 8 },
+});

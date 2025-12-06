@@ -1,3 +1,4 @@
+import { useIsFocused } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
@@ -11,15 +12,16 @@ import {
 import { FrameFaceDetectionOptions, useFaceDetector } from "react-native-vision-camera-face-detector";
 import { Worklets } from "react-native-worklets-core";
 
-import { useTabsNavigation } from "@/app/navigation/hooks";
+import { useRootNavigation } from "@/app/navigation/hooks";
 import { getImageEmbeddingAsync, loadModelAsync, logImageUriAsync } from "@/modules/expo-face-embedder";
 import { parentDraft } from "@/storage/Parent";
 
 export default function SecureAccountSetup() {
-  const navigation = useTabsNavigation()
+    const navigation = useRootNavigation();
     const device = useCameraDevice("front");
     const { hasPermission, requestPermission } = useCameraPermission();
     const cameraRef = useRef<VisionCamera>(null);
+    const isFocused = useIsFocused(); // ✅ detect if screen is focused
 
     const captureCount = useRef(0);
     const lastCapture = useRef(0);
@@ -45,73 +47,59 @@ export default function SecureAccountSetup() {
         if (!hasPermission) requestPermission();
     }, [hasPermission]);
 
-    useEffect(() => {
-        return () => stopListeners();
-    }, []);
+    useEffect(() => () => stopListeners(), []);
 
     const captureFacePhotoAndGenerateEmbeddings = async () => {
+        if (!cameraRef.current) return;
         try {
-            const photo = await cameraRef.current?.takePhoto();
-            if (photo) {
-                console.log("✅ Photo captured:", photo.path);
-                await logImageUriAsync(photo.path);
-                await loadModelAsync();
+            const photo = await cameraRef.current.takePhoto();
+            if (!photo) return;
 
-                const embedding = await getImageEmbeddingAsync(photo.path);
+            console.log("✅ Photo captured:", photo.path);
+            await logImageUriAsync(photo.path);
+            await loadModelAsync();
+            const embedding = await getImageEmbeddingAsync(photo.path);
 
-                // 👇 Always read latest
-                let existingRaw = parentDraft.getString("parentFaceEmbeddings");
-                let existing = existingRaw ? JSON.parse(existingRaw) : [];
+            let existingRaw = parentDraft.getString("parentFaceEmbeddings");
+            let existing = existingRaw ? JSON.parse(existingRaw) : [];
 
-                // 👇 if 3 embeddings already exist, reset to start fresh
-                if (existing.length >= 3) {
-                    console.log("🧹 Clearing old embeddings before saving new session...");
-                    existing = [];
-                }
+            if (existing.length >= 3) existing = []; // reset if already 3 embeddings
 
-                existing.push(embedding);
-                parentDraft.set("parentFaceEmbeddings", JSON.stringify(existing));
-
-                console.log(`💾 Saved embedding #${existing.length}`);
-            }
+            existing.push(embedding);
+            parentDraft.set("parentFaceEmbeddings", JSON.stringify(existing));
+            console.log(`💾 Saved embedding #${existing.length}`);
         } catch (err) {
             console.error("❌ Photo capture error:", err);
             setMessage("Something went wrong while capturing. Please try again.");
         }
     };
 
-    // we got faceses from frame processor now we handle them here and generate embeddings
-
-
     const handleDetectedFaces = Worklets.createRunOnJS((faces: any) => {
-        const now = Date.now();
+        if (!isFocused) return; // ✅ stop scanning if screen not focused
         if (faces.length === 0) return;
 
-        const face = faces[0]; // take first detected face
+        const now = Date.now();
+        const face = faces[0];
         const leftOpen = face.leftEyeOpenProbability ?? 1;
         const rightOpen = face.rightEyeOpenProbability ?? 1;
-
-        // 👇 Check if both eyes are open
         const eyesOpenEnough = leftOpen > 0.5 && rightOpen > 0.5;
 
         if (!eyesOpenEnough) {
-            // 👇 Stop scanning until both eyes are open
             if (scanning.current) {
                 scanning.current = false;
                 setMessage("👁 Please open both eyes to continue scanning.");
             }
+            return;
         }
 
-        // 👇 Eyes are open → resume scanning logic
         if (!scanning.current) {
             scanning.current = true;
             setMessage("✅ Eyes detected — capturing face...");
         }
 
-        if (faces.length > 0 && scanning.current && now - lastCapture.current > 2000) {
+        if (now - lastCapture.current > 2000 && scanning.current) {
             lastCapture.current = now;
             captureCount.current += 1;
-
             captureFacePhotoAndGenerateEmbeddings();
 
             const currentProgress = (captureCount.current / 3) * 100;
@@ -125,29 +113,26 @@ export default function SecureAccountSetup() {
                 setProgress(100);
                 setStatus("success");
                 setMessage("✅ All 3 face scans completed successfully! Redirecting...");
-                setTimeout(() => navigation.navigate('KidsTab'), 1000);
+                parentDraft.set("IsParentProfileCompleted", true)
+                setTimeout(() => navigation.navigate("Tabs", { screen: "KidsTab" }), 1000);
             }
         }
     });
 
-    //frame processor run on every frame on camer like 60fps 60 frames per second 
-    // frame priocesser just detect faces not  take any pic 
     const lastProcessed = useRef(0);
     const frameProcessor = useFrameProcessor((frame) => {
         "worklet";
+        if (!isFocused) return; // ✅ stop frame processing if screen not focused
         const now = Date.now();
         if (now - lastProcessed.current < 3000) return;
         lastProcessed.current = now;
-        // Detect faces in the current frame if we get send it to handleDetectedFaces
+
         const faces = detectFaces(frame);
-        if (faces.length > 0) {
-            Worklets.createRunOnJS(handleDetectedFaces)(faces);
-        }
-    }, [detectFaces]);
+        if (faces.length > 0) Worklets.createRunOnJS(handleDetectedFaces)(faces);
+    }, [detectFaces, isFocused]);
 
     if (!device) return <CenteredMessage message="Loading camera..." />;
-    if (!hasPermission)
-        return <CenteredMessage message="Camera access is required to scan your face." action={requestPermission} />;
+    if (!hasPermission) return <CenteredMessage message="Camera access is required." action={requestPermission} />;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -155,66 +140,59 @@ export default function SecureAccountSetup() {
                 ref={cameraRef}
                 style={styles.camera}
                 device={device}
-                isActive={true}
+                isActive={isFocused} // ✅ only active if screen focused
                 frameProcessor={frameProcessor}
-                photo={true}
+                photo
             />
 
             <View style={styles.overlay}>
-                {status === "idle" && (
-                    <View style={styles.introContainer}>
-                        <Text style={styles.title}>Face Verification</Text>
-
-                        <Text style={styles.privacyMessage}>
-                            We care about your privacy. Your photos never leave your device — all face data is processed
-                            locally and securely stored.
-                        </Text>
-
-                        <Text style={styles.hintText}>
-                            Please position your face clearly in front of the camera and tap below to begin.
-                        </Text>
-
-                        <Button
-                            mode="contained"
-                            onPress={() => {
-                                scanning.current = true;
-                                captureCount.current = 0;
-                                setProgress(0);
-                                setStatus("scanning");
-                                setMessage("Hold still — scanning will capture 3 angles automatically.");
-                                console.log("🚀 Started scanning...");
-                            }}
-                            style={styles.startButton}
-                            labelStyle={styles.startButtonLabel}
-                        >
-                            Start Face Scan
-                        </Button>
-                    </View>
-                )}
-
-                {status === "scanning" && (
-                    <View style={styles.progressContainer}>
-                        <Text style={styles.progressText}>Scanning... {Math.round(progress)}%</Text>
-
-                        <View style={styles.progressBarBackground}>
-                            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-                        </View>
-
-                        {message !== "" && <Text style={styles.messageText}>{message}</Text>}
-                    </View>
-                )}
-
-                {status === "success" && (
-                    <View style={styles.successContainer}>
-                        <Text style={styles.successText}>✅ Face scan completed!</Text>
-                        <Text style={styles.redirectText}>Redirecting to your home screen...</Text>
-                        <ActivityIndicator style={styles.loader} animating color="lightgreen" size="small" />
-                    </View>
-                )}
+                {status === "idle" && <IntroContent startScan={() => {
+                    scanning.current = true;
+                    captureCount.current = 0;
+                    setProgress(0);
+                    setStatus("scanning");
+                    setMessage("Hold still — scanning will capture 3 angles automatically.");
+                }} />}
+                {status === "scanning" && <ScanningContent progress={progress} message={message} />}
+                {status === "success" && <SuccessContent />}
             </View>
         </SafeAreaView>
     );
 }
+
+// UI Helpers
+const IntroContent = ({ startScan }: { startScan: () => void }) => (
+    <View style={styles.introContainer}>
+        <Text style={styles.title}>Face Verification</Text>
+        <Text style={styles.privacyMessage}>
+            We care about your privacy. Your photos never leave your device — all face data is processed locally and securely stored.
+        </Text>
+        <Text style={styles.hintText}>
+            Please position your face clearly in front of the camera and tap below to begin.
+        </Text>
+        <Button mode="contained" onPress={startScan} style={styles.startButton} labelStyle={styles.startButtonLabel}>
+            Start Face Scan
+        </Button>
+    </View>
+);
+
+const ScanningContent = ({ progress, message }: { progress: number; message: string }) => (
+    <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>Scanning... {Math.round(progress)}%</Text>
+        <View style={styles.progressBarBackground}>
+            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+        </View>
+        {message && <Text style={styles.messageText}>{message}</Text>}
+    </View>
+);
+
+const SuccessContent = () => (
+    <View style={styles.successContainer}>
+        <Text style={styles.successText}>✅ Face scan completed!</Text>
+        <Text style={styles.redirectText}>Redirecting to your home screen...</Text>
+        <ActivityIndicator style={styles.loader} animating color="lightgreen" size="small" />
+    </View>
+);
 
 const CenteredMessage = ({ message, action }: { message: string; action?: () => void }) => (
     <View style={styles.centered}>
@@ -228,101 +206,20 @@ const styles = StyleSheet.create({
     camera: { ...StyleSheet.absoluteFillObject },
     centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-    overlay: {
-        position: "absolute",
-        bottom: 60,
-        width: "100%",
-        alignItems: "center",
-        paddingHorizontal: 20,
-    },
-
-    introContainer: {
-        alignItems: "center",
-        paddingHorizontal: 24,
-    },
-
-    title: {
-        color: "white",
-        fontSize: 20,
-        fontWeight: "600",
-        marginBottom: 12,
-    },
-
-    privacyMessage: {
-        color: "#A0A0A0",
-        fontSize: 13,
-        textAlign: "center",
-        lineHeight: 18,
-        marginBottom: 12,
-    },
-
-    hintText: {
-        color: "white",
-        textAlign: "center",
-        marginBottom: 16,
-        fontSize: 14,
-    },
-
-    startButton: {
-        backgroundColor: "#00C853",
-        borderRadius: 8,
-        paddingHorizontal: 24,
-    },
-
-    startButtonLabel: {
-        color: "white",
-        fontSize: 15,
-        fontWeight: "500",
-    },
-
-    progressContainer: {
-        alignItems: "center",
-        marginTop: 16,
-    },
-
-    progressText: {
-        color: "white",
-        fontSize: 14,
-    },
-
-    progressBarBackground: {
-        width: "80%",
-        height: 6,
-        backgroundColor: "#333",
-        borderRadius: 3,
-        marginTop: 8,
-    },
-
-    progressBarFill: {
-        height: "100%",
-        backgroundColor: "#00C853",
-        borderRadius: 3,
-    },
-
-    messageText: {
-        color: "#ccc",
-        marginTop: 8,
-        textAlign: "center",
-        fontSize: 13,
-    },
-
-    successContainer: {
-        alignItems: "center",
-        marginTop: 16,
-    },
-
-    successText: {
-        color: "lightgreen",
-        fontSize: 16,
-        fontWeight: "500",
-    },
-
-    redirectText: {
-        color: "#ccc",
-        marginTop: 4,
-    },
-
-    loader: {
-        marginTop: 8,
-    },
+    overlay: { position: "absolute", bottom: 60, width: "100%", alignItems: "center", paddingHorizontal: 20 },
+    introContainer: { alignItems: "center", paddingHorizontal: 24 },
+    title: { color: "white", fontSize: 20, fontWeight: "600", marginBottom: 12 },
+    privacyMessage: { color: "#A0A0A0", fontSize: 13, textAlign: "center", lineHeight: 18, marginBottom: 12 },
+    hintText: { color: "white", textAlign: "center", marginBottom: 16, fontSize: 14 },
+    startButton: { backgroundColor: "#00C853", borderRadius: 8, paddingHorizontal: 24 },
+    startButtonLabel: { color: "white", fontSize: 15, fontWeight: "500" },
+    progressContainer: { alignItems: "center", marginTop: 16 },
+    progressText: { color: "white", fontSize: 14 },
+    progressBarBackground: { width: "80%", height: 6, backgroundColor: "#333", borderRadius: 3, marginTop: 8 },
+    progressBarFill: { height: "100%", backgroundColor: "#00C853", borderRadius: 3 },
+    messageText: { color: "#ccc", marginTop: 8, textAlign: "center", fontSize: 13 },
+    successContainer: { alignItems: "center", marginTop: 16 },
+    successText: { color: "lightgreen", fontSize: 16, fontWeight: "500" },
+    redirectText: { color: "#ccc", marginTop: 4 },
+    loader: { marginTop: 8 },
 });

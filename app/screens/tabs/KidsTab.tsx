@@ -1,4 +1,4 @@
-import { useTabsNavigation } from "@/app/navigation/hooks";
+import { useRootNavigation } from "@/app/navigation/hooks";
 import React from "react";
 import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Button, Card, Text } from "react-native-paper";
@@ -29,12 +29,14 @@ const kids = [
 ];
 
 export default function KidsTab() {
-const  navigation = useTabsNavigation()
+    const navigation = useRootNavigation()
     const handleKidPress = (kidName: string) => {
         // Navigate to kid settings screen
         // Pass kid name as a param if needed
        ;
     };
+
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -71,7 +73,7 @@ const  navigation = useTabsNavigation()
                     textColor="#a0b8a4"
                     icon="plus-circle"
                     onPress={() => {
-                        
+                        navigation.navigate('KidFlow', { screen: "AddKid" })
                     }}
                 >
                     Add New Kid
