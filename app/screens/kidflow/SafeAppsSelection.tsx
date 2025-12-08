@@ -10,7 +10,7 @@ import { ActivityIndicator, Button, IconButton, ProgressBar, Switch, Text, useTh
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ---------------- TYPES ---------------- */
-interface AppItem {
+export interface AppItem {
     packageName: string;
     appName: string;
     versionName?: string;
@@ -82,11 +82,13 @@ export default function SafeAppsSelection() {
                     return { ...app, icon: iconBase64 ? `data:image/png;base64,${iconBase64}` : "" };
                 })
             );
-
             setLoadingProgress(0.7);
             return apps;
         }
     });
+
+
+
 
     /* ------ CLASSIFY NEW APPS ------ */
     const classifyAppsMutation = useMutation({
@@ -112,6 +114,9 @@ export default function SafeAppsSelection() {
             return data.apps;
         },
         onSuccess: (result, newApps) => {
+
+
+
             const safePackages = new Set(result.map((x: any) => x.packageName));
             const processedNewApps = newApps.map(a => ({ ...a, isKidSafe: safePackages.has(a.packageName) }));
 
@@ -120,8 +125,9 @@ export default function SafeAppsSelection() {
                 ...classifiedApps.filter(a => !processedNewApps.find(n => n.packageName === a.packageName)),
                 ...processedNewApps
             ];
-            setClassifiedApps(mergedApps);
 
+
+            setClassifiedApps(mergedApps);
             setLoadingProgress(1);
             setTimeout(() => setFlowStep("review"), 300);
         },
@@ -131,11 +137,15 @@ export default function SafeAppsSelection() {
         }
     });
 
+
+
+
     /* ------ AUTO CLASSIFY NEW APPS ------ */
     useEffect(() => {
         if (!installedAppsQuery.data || !hasInternet) return;
 
         const installedPackageNames = new Set(installedAppsQuery.data.map(a => a.packageName));
+
         const classifiedPackageNames = new Set(classifiedApps.map(a => a.packageName));
 
         const newApps = installedAppsQuery.data.filter(a => !classifiedPackageNames.has(a.packageName));
@@ -152,11 +162,7 @@ export default function SafeAppsSelection() {
     };
 
     const saveSelections = () => {
-        const allowed = classifiedApps
-            .filter(a => a.isKidSafe)
-            .map(a => a.packageName);
-
-        saveKidSafePackages(allowed);
+        saveKidSafePackages(classifiedApps);
         navigation.navigate("ProfileCreatedScreen")
     };
 

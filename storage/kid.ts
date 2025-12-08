@@ -1,3 +1,4 @@
+import { AppItem } from "@/app/screens/kidflow/SafeAppsSelection";
 import { createMMKV } from "react-native-mmkv";
 
 export const kidDraft = createMMKV({
@@ -17,11 +18,11 @@ export const kidSafeAppsStore = createMMKV({
 
 
 
-export function saveKidSafePackages(packages: string[]) {
+export function saveKidSafePackages(packages: AppItem[]) {
     kidSafeAppsStore.set("kidSafePackages", JSON.stringify(packages));
 }
 
-export function getKidSafePackages(): string[] {
+export function getKidSafePackages(): AppItem[] {
     const raw = kidSafeAppsStore.getString("kidSafePackages");
     if (!raw) return [];
     try {
@@ -30,3 +31,5 @@ export function getKidSafePackages(): string[] {
         return [];
     }
 }
+
+

@@ -1,125 +1,121 @@
-import { FlashList } from "@shopify/flash-list";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Image, Linking, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "react-native-paper";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// src/screens/LauncherScreen.tsx
+import { openApp } from '@/modules/expo-launcher';
+import React from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
 
-import { isServiceEnabled, listenOnChange } from "@/modules/expo-app-monitor";
-import { getAppIcon, getInstalledApps } from "@/modules/expo-installed-apps";
-import { openApp } from "@/modules/expo-launcher";
-import { getKidSafePackages } from "@/storage/kid";
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLauncherData } from './hooks/useLauncherData';
 
-interface AppItem { packageName: string; appName: string; icon: string; }
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TILE_SIZE = SCREEN_WIDTH / 4;
 
-export default function KidSafeLauncherScreen() {
-    const theme = useTheme();
-    const insets = useSafeAreaInsets();
-    const [serviceEnabled, setServiceEnabled] = useState(false);
-    const [appLogs, setAppLogs] = useState<string[]>([]);
+export default function LauncherScreen() {
+    const { apps, ready, serviceOk } = useLauncherData();
 
-    // Start monitoring foreground apps
-    useEffect(() => {
-        const sub = listenOnChange(pkg => {
-            console.log("Foreground app opened:", pkg);
-            setAppLogs(prev => [pkg, ...prev]);
-        });
-        return () => sub.remove();
-    }, []);
+    if (!ready) {
+        return (
+            <View style={styles.centered}>
+                <ActivityIndicator size="large" color="#000" />
+                <Text style={{ marginTop: 10 }}>Loading apps…</Text>
+            </View>
+        );
+    }
 
-    // Check Accessibility Service
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            const enabled = isServiceEnabled();
-            setServiceEnabled(enabled ?? false);
-        }, 100);
-        return () => clearInterval(interval);
-    }, []);
+    if (!serviceOk) {
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.warning}>⚠️ Monitoring Service Not Running</Text>
+                <Text style={styles.sub}>Please enable the service from parent device.</Text>
+            </View>
+        );
+    }
 
-    const openAccessibilitySettings = () => {
-        if (Platform.OS === "android") {
-            Linking.sendIntent("android.settings.ACCESSIBILITY_SETTINGS");
-        }
-    };
-
-    // Load installed kid-safe apps
-    const installedAppsQuery = useQuery({
-        queryKey: ["kid-launcher-apps"],
-        queryFn: async (): Promise<AppItem[]> => {
-            const allowedPackages = getKidSafePackages();
-            if (!allowedPackages?.length) return [];
-            const rawApps: AppItem[] = JSON.parse(await getInstalledApps());
-            const filtered = rawApps.filter(a => allowedPackages.includes(a.packageName));
-
-            return Promise.all(
-                filtered.map(async app => ({
-                    ...app,
-                    icon: await getAppIcon(app.packageName)
-                        .then(b64 => b64 ? `data:image/png;base64,${b64}` : "")
-                        .catch(() => ""),
-                }))
-            );
-        },
-        staleTime: Infinity,
-    });
-
-    const AppTile = ({ item }: { item: AppItem }) => (
-        <TouchableOpacity onPress={() => openApp(item.packageName)} style={styles.tile}>
-            {item.icon ? <Image source={{ uri: item.icon }} style={styles.icon} /> :
-                <View style={[styles.icon, { backgroundColor: theme.colors.surfaceVariant }]} />}
-            <Text numberOfLines={1} style={styles.label}>{item.appName}</Text>
-        </TouchableOpacity>
-    );
-
-    const apps = installedAppsQuery.data || [];
-
-
-    if (installedAppsQuery.isLoading) return (
-        <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-            <Text style={{ fontSize: 20, fontWeight: "600" }}>Loading Apps...</Text>
-        </View>
-    );
+    if (apps.length === 0) {
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.empty}>No safe apps allowed by parents.</Text>
+            </View>
+        );
+    }
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top + 20, backgroundColor: theme.colors.background }]}>
-            <Text style={styles.header}>Kid Home</Text>
-
-            <FlashList
+        <SafeAreaView style={styles.container}>
+            <FlatList
                 data={apps}
-                numColumns={4}
-                keyExtractor={i => i.packageName}
-                renderItem={({ item }) => <AppTile item={item} />}
-                contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 20 }}
+                keyExtractor={(item) => item.packageName}
+                numColumns={3}
+                contentContainerStyle={styles.grid}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                        style={styles.tile}
+                        activeOpacity={0.7}
+                        onPress={() => openApp(item.packageName)}
+                    >
+                        <Image
+                            source={{ uri: item.icon }}
+                            style={styles.icon}
+                        />
+                        <Text style={styles.label} numberOfLines={1}>
+                            {item.appName}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             />
-
-
-
-            <Modal visible={!serviceEnabled} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalHeader}>Enable Accessibility Service</Text>
-                        <Text style={styles.modalDesc}>To make the launcher work properly and ensure only safe apps are used, please enable the Accessibility Service.</Text>
-                        <TouchableOpacity style={styles.button} onPress={openAccessibilitySettings}>
-                            <Text style={styles.buttonText}>Open Accessibility Settings</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    center: { flex: 1, justifyContent: "center", alignItems: "center" },
-    header: { textAlign: "center", fontSize: 22, fontWeight: "700", marginBottom: 20 },
-    tile: { flex: 1, alignItems: "center", marginVertical: 16 },
-    icon: { width: 60, height: 60, borderRadius: 16, marginBottom: 6 },
-    label: { fontSize: 12, textAlign: "center", width: 70 },
-    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
-    modalContent: { width: "85%", backgroundColor: "white", borderRadius: 16, padding: 24, alignItems: "center" },
-    modalHeader: { fontSize: 20, fontWeight: "700", marginBottom: 12, textAlign: "center" },
-    modalDesc: { fontSize: 16, marginBottom: 20, textAlign: "center", lineHeight: 22 },
-    button: { backgroundColor: "#007AFF", paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12 },
-    buttonText: { color: "white", fontWeight: "600", textAlign: "center" },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    grid: {
+        padding: 10,
+    },
+    tile: {
+        width: TILE_SIZE,
+        height: TILE_SIZE + 20,
+        margin: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 16,
+    },
+    icon: {
+        width: TILE_SIZE * 0.65,
+        height: TILE_SIZE * 0.65,
+        borderRadius: 12,
+    },
+    label: {
+        marginTop: 5,
+        fontSize: 12,
+        textAlign: 'center',
+    },
+    warning: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'red',
+    },
+    sub: {
+        marginTop: 5,
+        color: '#555',
+    },
+    empty: {
+        fontSize: 16,
+        color: '#777',
+    },
 });
