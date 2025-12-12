@@ -25,21 +25,16 @@ export default function AppNavigator({ startup }: { startup: StartupState }) {
     }, [startup]);
 
 
+    let initialRoute: string;
 
-
-    let initialRoute = "ParentFlow";
-
-    if (startup.isParentProfileCompleted) {
-        initialRoute = "Tabs";
-    }
-
-    if (startup.isDefaultLauncher && startup.isKidProfileCompleted) {
+    if (!startup.isParentProfileCompleted) {  // false !false = true so false become true then we set inittial it mean yes parent profile is not completed 
+        initialRoute = "ParentFlow";
+    } else if (!startup.isKidProfileCompleted) { // same here 
+        initialRoute = "Tabs"; // kid setup
+    } else if (startup.isDefaultLauncher && startup.isKidProfileCompleted) {  // when both true 
         initialRoute = "LauncherStack";
-
-    }
-
-    if (!startup.isKidProfileCompleted) {
-        initialRoute = "Tabs";
+    } else {
+        initialRoute = "Tabs";   // if nono of above meet 
     }
 
     console.log(initialRoute);
