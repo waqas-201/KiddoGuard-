@@ -9,6 +9,7 @@ import ParentFlowStack from "./ParentFlowStack";
 import Tabs from "./TabsNavigator";
 
 export default function AppNavigator({ startup }: { startup: StartupState }) {
+
     const Stack = createNativeStackNavigator();
 
 
@@ -34,7 +35,7 @@ export default function AppNavigator({ startup }: { startup: StartupState }) {
     } else if (startup.isDefaultLauncher && startup.isKidProfileCompleted) {  // when both true 
         initialRoute = "LauncherStack";
     } else {
-        initialRoute = "Tabs";   // if nono of above meet 
+        initialRoute = "Tabs";   // if none of above meet 
     }
 
     console.log(initialRoute);

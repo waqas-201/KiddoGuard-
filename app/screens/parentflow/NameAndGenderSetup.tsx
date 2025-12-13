@@ -1,30 +1,35 @@
 import { useParentFlowNavigation } from "@/app/navigation/hooks";
 import { parentDraft } from "@/storage/Parent";
 import React from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import {
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { useMMKVString } from "react-native-mmkv";
 import { IconButton, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NameGenderScreen() {
     const theme = useTheme();
-    const navigation = useParentFlowNavigation()
+    const navigation = useParentFlowNavigation();
     const [name, setName] = useMMKVString("parentName", parentDraft);
+
+    // Consider trimming and validating the name
+    const trimmed = typeof name === "string" ? name.trim() : "";
+    const isNameValid = trimmed.length > 0;
+
+
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <IconButton
-                        icon="arrow-left"
-                        iconColor={theme.colors.onSurface}
-                        size={24}
-                        onPress={() => navigation.goBack()}
-                    />
+                    <IconButton icon="arrow-left" iconColor={theme.colors.onSurface} size={24} onPress={() => navigation.goBack()} />
                     <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: "600", fontSize: 18 }}>
                         Your Info
                     </Text>
@@ -56,8 +61,12 @@ export default function NameGenderScreen() {
                             ]}
                             placeholder="e.g. Ali Ahmed"
                             placeholderTextColor={theme.colors.onSurface + "99"}
-                            value={name}
+                            value={name ?? ""}
                             onChangeText={setName}
+                            returnKeyType="done"
+                            onSubmitEditing={() => {
+                                if (isNameValid) navigation.navigate("SecureAccountSetup");
+                            }}
                         />
                     </View>
                 </View>
@@ -65,11 +74,23 @@ export default function NameGenderScreen() {
                 {/* Footer */}
                 <View style={styles.footer}>
                     <TouchableOpacity
-                        style={[styles.button, { backgroundColor: theme.colors.primary }]}
-                        onPress={() => {navigation.navigate("SecureAccountSetup")}}
                         activeOpacity={0.8}
+                        disabled={!isNameValid}
+                        onPress={() => {
+                            // double-guard: prevent accidental navigation if invalid
+                            if (!isNameValid) return;
+                            navigation.navigate("SecureAccountSetup");
+                        }}
+                        style={[
+                            styles.button,
+                            {
+                                backgroundColor: isNameValid ? theme.colors.primary : theme.colors.surfaceDisabled,
+                            },
+                        ]}
                     >
-                        <Text style={[styles.buttonText, { color: theme.colors.onPrimary }]}>Continue</Text>
+                        <Text style={[styles.buttonText, { color: isNameValid ? theme.colors.onPrimary : theme.colors.onSurfaceDisabled }]}>
+                            Continue
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

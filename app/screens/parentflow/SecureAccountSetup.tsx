@@ -12,16 +12,16 @@ import {
 import { FrameFaceDetectionOptions, useFaceDetector } from "react-native-vision-camera-face-detector";
 import { Worklets } from "react-native-worklets-core";
 
-import { useRootNavigation } from "@/app/navigation/hooks";
+import { useParentFlowNavigation, useRootNavigation } from "@/app/navigation/hooks";
 import { getImageEmbeddingAsync, loadModelAsync, logImageUriAsync } from "@/modules/expo-face-embedder";
 import { parentDraft } from "@/storage/Parent";
 
 export default function SecureAccountSetup() {
-    const navigation = useRootNavigation();
+    const rootNavigation = useRootNavigation()
+    const navigation = useParentFlowNavigation()
     const device = useCameraDevice("front");
     const { hasPermission, requestPermission } = useCameraPermission();
     const cameraRef = useRef<VisionCamera>(null);
-    const isFocused = useIsFocused(); // ✅ detect if screen is focused
 
     const captureCount = useRef(0);
     const lastCapture = useRef(0);
@@ -30,6 +30,8 @@ export default function SecureAccountSetup() {
     const [status, setStatus] = useState<"idle" | "scanning" | "success">("idle");
     const [progress, setProgress] = useState(0);
     const [message, setMessage] = useState<string>("");
+
+    const isFocused = useIsFocused(); // ✅ screen focus detection
 
     const faceDetectionOptions = useRef<FrameFaceDetectionOptions>({
         performanceMode: "accurate",
@@ -43,15 +45,23 @@ export default function SecureAccountSetup() {
 
     const { detectFaces, stopListeners } = useFaceDetector(faceDetectionOptions);
 
+    // Request camera permission
     useEffect(() => {
         if (!hasPermission) requestPermission();
     }, [hasPermission]);
 
-    useEffect(() => () => stopListeners(), []);
+    // Clean up listeners on unmount
+    useEffect(() => {
+        return () => stopListeners();
+    }, []);
+
+
+    // insert data to db 
+
 
     const captureFacePhotoAndGenerateEmbeddings = async () => {
-        if (!cameraRef.current) return;
         try {
+            if (!cameraRef.current) return;
             const photo = await cameraRef.current.takePhoto();
             if (!photo) return;
 
@@ -60,13 +70,13 @@ export default function SecureAccountSetup() {
             await loadModelAsync();
             const embedding = await getImageEmbeddingAsync(photo.path);
 
-            let existingRaw = parentDraft.getString("parentFaceEmbeddings");
+            let existingRaw = parentDraft.getString("parentFaceEmbedding");
             let existing = existingRaw ? JSON.parse(existingRaw) : [];
 
             if (existing.length >= 3) existing = []; // reset if already 3 embeddings
 
             existing.push(embedding);
-            parentDraft.set("parentFaceEmbeddings", JSON.stringify(existing));
+            parentDraft.set("parentFaceEmbedding", JSON.stringify(existing));
             console.log(`💾 Saved embedding #${existing.length}`);
         } catch (err) {
             console.error("❌ Photo capture error:", err);
@@ -75,10 +85,10 @@ export default function SecureAccountSetup() {
     };
 
     const handleDetectedFaces = Worklets.createRunOnJS((faces: any) => {
-        if (!isFocused) return; // ✅ stop scanning if screen not focused
+        if (!isFocused) return; // ✅ stop scanning if screen is not focused
+        const now = Date.now();
         if (faces.length === 0) return;
 
-        const now = Date.now();
         const face = faces[0];
         const leftOpen = face.leftEyeOpenProbability ?? 1;
         const rightOpen = face.rightEyeOpenProbability ?? 1;
@@ -97,7 +107,7 @@ export default function SecureAccountSetup() {
             setMessage("✅ Eyes detected — capturing face...");
         }
 
-        if (now - lastCapture.current > 2000 && scanning.current) {
+        if (faces.length > 0 && scanning.current && now - lastCapture.current > 2000) {
             lastCapture.current = now;
             captureCount.current += 1;
             captureFacePhotoAndGenerateEmbeddings();
@@ -112,9 +122,9 @@ export default function SecureAccountSetup() {
                 captureCount.current = 0;
                 setProgress(100);
                 setStatus("success");
+                parentDraft.set('isParentProfileCompleted', true)
                 setMessage("✅ All 3 face scans completed successfully! Redirecting...");
-                parentDraft.set("IsParentProfileCompleted", true)
-                setTimeout(() => navigation.navigate("Tabs", { screen: "KidsTab" }), 1000);
+                setTimeout(() => navigation.replace('SaveParentProfileScreen'), 1000);
             }
         }
     });
@@ -132,7 +142,8 @@ export default function SecureAccountSetup() {
     }, [detectFaces, isFocused]);
 
     if (!device) return <CenteredMessage message="Loading camera..." />;
-    if (!hasPermission) return <CenteredMessage message="Camera access is required." action={requestPermission} />;
+    if (!hasPermission)
+        return <CenteredMessage message="Camera access is required to scan your face." action={requestPermission} />;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -142,9 +153,8 @@ export default function SecureAccountSetup() {
                 device={device}
                 isActive={isFocused} // ✅ only active if screen focused
                 frameProcessor={frameProcessor}
-                photo
+                photo={true}
             />
-
             <View style={styles.overlay}>
                 {status === "idle" && <IntroContent startScan={() => {
                     scanning.current = true;
@@ -152,6 +162,7 @@ export default function SecureAccountSetup() {
                     setProgress(0);
                     setStatus("scanning");
                     setMessage("Hold still — scanning will capture 3 angles automatically.");
+                    console.log("🚀 Started scanning...");
                 }} />}
                 {status === "scanning" && <ScanningContent progress={progress} message={message} />}
                 {status === "success" && <SuccessContent />}
@@ -160,7 +171,7 @@ export default function SecureAccountSetup() {
     );
 }
 
-// UI Helpers
+// Helper Components
 const IntroContent = ({ startScan }: { startScan: () => void }) => (
     <View style={styles.introContainer}>
         <Text style={styles.title}>Face Verification</Text>
@@ -182,7 +193,7 @@ const ScanningContent = ({ progress, message }: { progress: number; message: str
         <View style={styles.progressBarBackground}>
             <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
         </View>
-        {message && <Text style={styles.messageText}>{message}</Text>}
+        {message !== "" && <Text style={styles.messageText}>{message}</Text>}
     </View>
 );
 
@@ -206,7 +217,13 @@ const styles = StyleSheet.create({
     camera: { ...StyleSheet.absoluteFillObject },
     centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-    overlay: { position: "absolute", bottom: 60, width: "100%", alignItems: "center", paddingHorizontal: 20 },
+    overlay: {
+        position: "absolute",
+        bottom: 60,
+        width: "100%",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
     introContainer: { alignItems: "center", paddingHorizontal: 24 },
     title: { color: "white", fontSize: 20, fontWeight: "600", marginBottom: 12 },
     privacyMessage: { color: "#A0A0A0", fontSize: 13, textAlign: "center", lineHeight: 18, marginBottom: 12 },

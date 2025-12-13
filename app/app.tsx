@@ -1,4 +1,5 @@
-import { useDatabaseReady } from "@/db/db";
+import { db, useDatabaseReady } from "@/db/db";
+import { parentTable } from "@/db/schema";
 import { loadStartupState, StartupState } from "@/storage/state/startup";
 import { MyTheme } from "@/theme";
 import React, { useEffect, useState } from "react";

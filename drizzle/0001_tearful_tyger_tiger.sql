@@ -1,0 +1,1 @@
+ALTER TABLE `parent_table` ADD `isParentProfileCompleted` integer DEFAULT false NOT NULL;

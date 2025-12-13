@@ -3,7 +3,8 @@ import { blob, int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const parentTable = sqliteTable("parent_table", {
     id: int().primaryKey({ autoIncrement: true }),
     name: text().notNull(),
-    embedding: blob("embedding", { mode: "buffer" }).notNull(),
+    embedding: text().notNull(),
+    isParentProfileCompleted: int({ mode: "boolean" }).notNull().default(false),
 });
 
 export const childTable = sqliteTable("child_table", {
@@ -11,7 +12,7 @@ export const childTable = sqliteTable("child_table", {
     name: text().notNull(),
     age: int().notNull(),
     timeLimit: int().notNull(),
-    embedding: blob("embedding", { mode: "buffer" }).notNull(),
+    embedding: text().notNull(),
     parentId: int().notNull(), // link to parent
 
 });

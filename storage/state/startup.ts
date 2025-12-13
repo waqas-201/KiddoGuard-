@@ -9,20 +9,17 @@ export type StartupState = {
 };
 
 export const loadStartupState = async (): Promise<StartupState> => {
+    console.log("start up  is started ");
 
 
 
-    const isParentProfileCompleted =
-        parentDraft.getBoolean("IsParentProfileCompleted") ?? false;
-      
-    console.log(isParentProfileCompleted);
-
-     const isKidProfileCompleted = kidDraft.getBoolean("isKidProfileCompleted") ?? false
-    
-    console.log(isKidProfileCompleted);
-
+    const isParentProfileCompleted = parentDraft.getBoolean("IsParentProfileCompleted") ?? false;
+    console.log('isParentProfileCompleted', isParentProfileCompleted);
+    const isKidProfileCompleted = kidDraft.getBoolean("isKidProfileCompleted") ?? false
+    console.log("isKidProfileCompleted ", isKidProfileCompleted);
     const defaultLauncher = await isDefaultLauncher();
-    console.log(defaultLauncher);
+    console.log("isdefault launcher ", defaultLauncher);
+
 
 
     return {

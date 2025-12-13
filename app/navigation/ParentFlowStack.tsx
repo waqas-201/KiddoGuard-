@@ -3,6 +3,7 @@ import React from "react";
 import NameGenderScreen from "../screens/parentflow/NameAndGenderSetup";
 import OnboardingScreen from "../screens/parentflow/OnboardingScreen";
 import ParentProfileScreen from "../screens/parentflow/ParentProfile";
+import SaveParentProfileScreen from "../screens/parentflow/SaveParentProfileScreen";
 import SecureAccountSetup from "../screens/parentflow/SecureAccountSetup";
 
 
@@ -16,6 +17,7 @@ export default function ParentFlowStack() {
             <Stack.Screen name="ParentProfile" component={ParentProfileScreen} />
             <Stack.Screen name="NameAndGenderScreen" component={NameGenderScreen} />
             <Stack.Screen name="SecureAccountSetup" component={SecureAccountSetup} />
+            <Stack.Screen name="SaveParentProfileScreen" component={SaveParentProfileScreen} />
             
         </Stack.Navigator>
     );
