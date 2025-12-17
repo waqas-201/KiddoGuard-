@@ -11,13 +11,7 @@ import Tabs from "./TabsNavigator";
 export default function AppNavigator({ startup }: { startup: StartupState }) {
 
     const Stack = createNativeStackNavigator();
-
-
-
     const [showLauncherModal, setShowLauncherModal] = useState(false);
-
-
-
     useEffect(() => {
         // Show modal on app load if kid profile is done but launcher isn't active
         if (startup.isKidProfileCompleted && !startup.isDefaultLauncher) {
@@ -38,7 +32,7 @@ export default function AppNavigator({ startup }: { startup: StartupState }) {
         initialRoute = "Tabs";   // if none of above meet 
     }
 
-    console.log(initialRoute);
+    console.log('initial route is ==', initialRoute);
 
     return (
         <>

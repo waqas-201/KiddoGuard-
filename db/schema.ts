@@ -1,4 +1,4 @@
-import { blob, int, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const parentTable = sqliteTable("parent_table", {
     id: int().primaryKey({ autoIncrement: true }),
@@ -9,11 +9,12 @@ export const parentTable = sqliteTable("parent_table", {
 
 export const childTable = sqliteTable("child_table", {
     id: int().primaryKey({ autoIncrement: true }),
-    name: text().notNull(),
+    name: text().notNull().unique(),
     age: int().notNull(),
     timeLimit: int().notNull(),
     embedding: text().notNull(),
     parentId: int().notNull(), // link to parent
+    isKidProfileCompleted: int({ mode: 'boolean' }).default(false)
 
 });
 
@@ -28,8 +29,7 @@ export const usageLogTable = sqliteTable("usage_log", {
 export const appTable = sqliteTable("app_table", {
     packageName: text().primaryKey(),
     appName: text().notNull(),
-    versionName: text(),
-    icon: blob("icon", { mode: "buffer" }), // store icon as binary
-    isKidSafe: int().notNull().default(0),  // 0 = false, 1 = true
-    minAge: int().notNull().default(0),     // minimum age to use this app
+    icon: text().notNull(), // store icon as binary
+    isKidSafe: int({ mode: 'boolean' }).notNull().default(false),  // 0 = false, 1 = true
+    // minAge: int().notNull().default(0),     // minimum age to use this app  later after mvp 
 });

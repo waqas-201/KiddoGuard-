@@ -26,6 +26,7 @@ export default function SecureAccountSetup() {
     const captureCount = useRef(0);
     const lastCapture = useRef(0);
     const scanning = useRef(false);
+    const isCapturing = useRef(false); // mutex to prevent multiple .takePhoto()
 
     const [status, setStatus] = useState<"idle" | "scanning" | "success">("idle");
     const [progress, setProgress] = useState(0);
@@ -55,11 +56,10 @@ export default function SecureAccountSetup() {
         return () => stopListeners();
     }, []);
 
-
     // insert data to db 
-
-
     const captureFacePhotoAndGenerateEmbeddings = async () => {
+        if (isCapturing.current) return; // prevent duplicate captures
+        isCapturing.current = true;
         try {
             if (!cameraRef.current) return;
             const photo = await cameraRef.current.takePhoto();
@@ -81,6 +81,8 @@ export default function SecureAccountSetup() {
         } catch (err) {
             console.error("❌ Photo capture error:", err);
             setMessage("Something went wrong while capturing. Please try again.");
+        } finally {
+            isCapturing.current = false;
         }
     };
 
@@ -90,10 +92,20 @@ export default function SecureAccountSetup() {
         if (faces.length === 0) return;
 
         const face = faces[0];
-        const leftOpen = face.leftEyeOpenProbability ?? 1;
-        const rightOpen = face.rightEyeOpenProbability ?? 1;
-        const eyesOpenEnough = leftOpen > 0.5 && rightOpen > 0.5;
 
+        // ✅ SAFE eye check
+        const leftProb = face.leftEyeOpenProbability;
+        const rightProb = face.rightEyeOpenProbability;
+
+        if (leftProb == null || rightProb == null) {
+            if (scanning.current) {
+                scanning.current = false;
+                setMessage("👁 Please position your face clearly — couldn't detect eyes.");
+            }
+            return;
+        }
+
+        const eyesOpenEnough = leftProb > 0.6 && rightProb > 0.6;
         if (!eyesOpenEnough) {
             if (scanning.current) {
                 scanning.current = false;

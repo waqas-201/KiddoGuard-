@@ -22,6 +22,48 @@
       "when": 1765646008570,
       "tag": "0002_sturdy_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1765821228236,
+      "tag": "0003_worthless_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1765899357584,
+      "tag": "0004_wild_catseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1765979005177,
+      "tag": "0005_special_magdalene",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1765980006908,
+      "tag": "0006_tense_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1765985091422,
+      "tag": "0007_goofy_sharon_carter",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1765989781139,
+      "tag": "0008_polite_stardust",
+      "breakpoints": true
     }
   ]
 }

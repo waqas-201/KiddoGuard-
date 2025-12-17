@@ -1,5 +1,6 @@
 // src/screens/LauncherScreen.tsx
 import { openApp } from '@/modules/expo-launcher';
+import * as IntentLauncher from 'expo-intent-launcher';
 import React, { useEffect, useRef } from 'react';
 import {
     ActivityIndicator,
@@ -7,12 +8,15 @@ import {
     Dimensions,
     FlatList,
     Image,
+    Platform,
     SafeAreaView,
     StyleSheet,
     Text,
+    TouchableOpacity,
     TouchableWithoutFeedback,
     View,
 } from 'react-native';
+
 import { useLauncherData } from './hooks/useLauncherData';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -20,10 +24,9 @@ const TILE_SIZE = SCREEN_WIDTH / 4;
 
 export default function LauncherScreen() {
     const { apps, ready, serviceOk } = useLauncherData();
-
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    // --- Fade in grid ---
+    // Fade in grid
     useEffect(() => {
         if (ready) {
             Animated.timing(fadeAnim, {
@@ -33,6 +36,14 @@ export default function LauncherScreen() {
             }).start();
         }
     }, [ready]);
+
+    const openAccessibilitySettings = () => {
+        if (Platform.OS === 'android') {
+            IntentLauncher.startActivityAsync(
+                IntentLauncher.ActivityAction.ACCESSIBILITY_SETTINGS
+            );
+        }
+    };
 
     if (!ready) {
         return (
@@ -48,6 +59,12 @@ export default function LauncherScreen() {
             <View style={styles.centered}>
                 <Text style={styles.warning}>⚠️ Monitoring Service Not Running</Text>
                 <Text style={styles.sub}>Please enable the service from parent device.</Text>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={openAccessibilitySettings}
+                >
+                    <Text style={styles.buttonText}>Open Accessibility Settings</Text>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -87,7 +104,7 @@ function AnimatedTile({
     index,
     onPress,
 }: {
-    item: any;
+        item: { packageName: string; label?: string; icon: string };
     index: number;
     onPress: () => void;
 }) {
@@ -95,7 +112,6 @@ function AnimatedTile({
     const tileFade = useRef(new Animated.Value(0)).current;
     const tileTranslate = useRef(new Animated.Value(20)).current;
 
-    // Stagger effect per tile
     useEffect(() => {
         Animated.parallel([
             Animated.timing(tileFade, {
@@ -132,7 +148,6 @@ function AnimatedTile({
     };
 
     const launchApp = () => {
-        // Small pop animation before launching app
         Animated.sequence([
             Animated.spring(scale, {
                 toValue: 0.85,
@@ -151,6 +166,14 @@ function AnimatedTile({
         });
     };
 
+    // Make sure icon and label are valid
+    const iconUri =
+        item.icon.startsWith('data:image') || item.icon.startsWith('http')
+            ? item.icon
+            : `data:image/png;base64,${item.icon}`;
+
+    const label = item.label || 'Unknown App';
+
     return (
         <TouchableWithoutFeedback
             onPressIn={pressIn}
@@ -162,19 +185,13 @@ function AnimatedTile({
                     styles.tile,
                     {
                         opacity: tileFade,
-                        transform: [
-                            { scale },
-                            { translateY: tileTranslate },
-                        ],
+                        transform: [{ scale }, { translateY: tileTranslate }],
                     },
                 ]}
             >
-                <Image
-                    source={{ uri: item.icon }}
-                    style={styles.icon}
-                />
+                <Image source={{ uri: iconUri }} style={styles.icon} />
                 <Text numberOfLines={1} style={styles.label}>
-                    {item.label}
+                    {label}
                 </Text>
             </Animated.View>
         </TouchableWithoutFeedback>
@@ -190,6 +207,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 20,
     },
     grid: {
         paddingTop: 10,
@@ -203,6 +221,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 16,
+        backgroundColor: '#f5f5f5',
     },
     icon: {
         width: TILE_SIZE * 0.65,
@@ -219,13 +238,27 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: 'red',
+        textAlign: 'center',
     },
     sub: {
         marginTop: 5,
         color: '#555',
+        textAlign: 'center',
     },
     empty: {
         fontSize: 16,
         color: '#777',
+        textAlign: 'center',
+    },
+    button: {
+        marginTop: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        backgroundColor: '#007bff',
+        borderRadius: 8,
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
 });

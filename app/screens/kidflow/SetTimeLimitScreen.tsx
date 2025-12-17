@@ -1,22 +1,26 @@
-// SetTimeLimitScreen.tsx
-
 import { useKidFlowNavigation } from "@/app/navigation/hooks";
 import { kidDraft } from "@/storage/kid";
 import Slider from "@react-native-community/slider";
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { useMMKVNumber } from "react-native-mmkv";
 import { Button, IconButton, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SetTimeLimitScreen() {
     const theme = useTheme();
-    const navigation = useKidFlowNavigation()
-    // MMKV hook: may return undefined initially
-    const [time, setTime] = useMMKVNumber('time', kidDraft);
+    const navigation = useKidFlowNavigation();
 
-    // Ensure we always have a number for Slider and display
-    const safeTime = time ?? 1; // fallback to 1 hour
+    // Initialize local state from MMKV
+    const [time, setTime] = useState<number>(() => {
+        const stored = kidDraft.getNumber("time");
+        return stored ?? 1; // default to 1h if not set
+    });
+
+    // Save the final value on "Save" click
+    const handleKidPress = () => {
+        kidDraft.set("time", time);
+        navigation.navigate('KidFaceScan');
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -45,7 +49,7 @@ export default function SetTimeLimitScreen() {
 
                 <View style={[styles.sliderContainer, { backgroundColor: theme.colors.surface }]}>
                     <Text variant="displayMedium" style={{ color: theme.colors.onBackground, fontWeight: "bold" }}>
-                        {Math.floor(safeTime)}h {Math.round((safeTime % 1) * 60)}m
+                        {Math.floor(time)}h {Math.round((time % 1) * 60)}m
                     </Text>
                     <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginTop: 4 }}>
                         per day
@@ -56,11 +60,11 @@ export default function SetTimeLimitScreen() {
                         minimumValue={0}
                         maximumValue={12}
                         step={0.25} // 15min steps
-                        value={safeTime} // always a number
+                        value={time}
                         minimumTrackTintColor={theme.colors.primary}
                         maximumTrackTintColor={theme.colors.surfaceVariant || "#e0e0e0"}
                         thumbTintColor={theme.colors.primary}
-                        onValueChange={setTime} // updates MMKV directly
+                        onValueChange={setTime} // only updates local state
                     />
 
                     <View style={styles.sliderLabels}>
@@ -68,7 +72,6 @@ export default function SetTimeLimitScreen() {
                         <Text style={{ color: theme.colors.onSurface }}>12h</Text>
                     </View>
 
-                    {/* Recommended limit hint */}
                     <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginTop: 8, textAlign: 'center' }}>
                         Recommended for kids: 1–2h/day
                     </Text>
@@ -79,7 +82,7 @@ export default function SetTimeLimitScreen() {
             <View style={styles.footer}>
                 <Button
                     mode="contained"
-                    onPress={() => navigation.navigate("KidFaceScan")}
+                    onPress={handleKidPress}
                     style={{ width: "100%", maxWidth: 300, borderRadius: 24 }}
                     contentStyle={{ height: 48 }}
                     labelStyle={{ color: theme.colors.onPrimary, fontWeight: "700", fontSize: 16 }}

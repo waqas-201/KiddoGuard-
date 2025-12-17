@@ -1,6 +1,6 @@
+import { db } from "@/db/db";
+import { childTable, parentTable } from "@/db/schema";
 import { isDefaultLauncher } from "@/modules/expo-launcher";
-import { parentDraft } from "@/storage/Parent";
-import { kidDraft } from "../kid";
 
 export type StartupState = {
     isParentProfileCompleted: boolean;
@@ -10,12 +10,26 @@ export type StartupState = {
 
 export const loadStartupState = async (): Promise<StartupState> => {
     console.log("start up  is started ");
+    const parent = await db.select().from(parentTable).get()
+    const kid = await db.select().from(childTable).get()
+
+
+    console.log('-----------------------------------------------------------------')
+
+    console.log(kid)
+
+    console.log('-----------------------------------------------------------------')
+
+
+    console.log('parent table ', parent);
 
 
 
-    const isParentProfileCompleted = parentDraft.getBoolean("IsParentProfileCompleted") ?? false;
+
+    const isParentProfileCompleted = parent?.isParentProfileCompleted ?? false;
     console.log('isParentProfileCompleted', isParentProfileCompleted);
-    const isKidProfileCompleted = kidDraft.getBoolean("isKidProfileCompleted") ?? false
+    const isKidProfileCompleted = kid?.isKidProfileCompleted ?? false
+
     console.log("isKidProfileCompleted ", isKidProfileCompleted);
     const defaultLauncher = await isDefaultLauncher();
     console.log("isdefault launcher ", defaultLauncher);

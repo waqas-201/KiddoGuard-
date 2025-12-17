@@ -1,0 +1,1 @@
+ALTER TABLE `app_table` DROP COLUMN `versionName`;

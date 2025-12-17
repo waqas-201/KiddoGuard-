@@ -9,7 +9,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useMMKVString } from "react-native-mmkv";
+import { useMMKVNumber, useMMKVString } from "react-native-mmkv";
 import { Button, IconButton, Menu, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,7 +19,7 @@ export default function AddKidScreen() {
     const rootNavigator = useRootNavigation()
 
     const [name, setName] = useMMKVString("kid_name", kidDraft);
-    const [age, setAge] = useMMKVString("kid_age", kidDraft);
+    const [age, setAge] = useMMKVNumber("kid_age", kidDraft);
 
     // Menu visibility
     const [menuVisible, setMenuVisible] = useState(false);
@@ -134,8 +134,9 @@ export default function AddKidScreen() {
                                 <Menu.Item
                                     key={a}
                                     onPress={() => {
-                                        setAge(a);
+                                        setAge(Number(a));
                                         setMenuVisible(false);
+
                                     }}
                                     title={`${a} years old`}
                                 />

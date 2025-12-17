@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `child_table_name_unique` ON `child_table` (`name`);

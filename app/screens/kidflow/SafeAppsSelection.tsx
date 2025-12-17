@@ -1,6 +1,7 @@
 import { useKidFlowNavigation } from "@/app/navigation/hooks";
+import { db } from "@/db/db";
+import { appTable } from "@/db/schema";
 import { getAppIcon, getInstalledApps } from "@/modules/expo-installed-apps";
-import { saveKidSafePackages } from "@/storage/kid";
 import NetInfo from "@react-native-community/netinfo";
 import { FlashList } from "@shopify/flash-list";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -17,12 +18,12 @@ export interface AppItem {
     icon: string;
     isKidSafe?: boolean;
 }
+
 type Step = "loading" | "classifying" | "review" | "error";
 
 /* ---------------- CARD ---------------- */
 const KidSafeCard = ({ item, allowed, onToggle }: { item: AppItem; allowed: boolean; onToggle: (pkg: string) => void }) => {
     const theme = useTheme();
-
     return (
         <TouchableOpacity
             activeOpacity={0.75}
@@ -48,7 +49,8 @@ const KidSafeCard = ({ item, allowed, onToggle }: { item: AppItem; allowed: bool
 /* ---------------- MAIN ---------------- */
 export default function SafeAppsSelection() {
     const insets = useSafeAreaInsets();
-    const navigation = useKidFlowNavigation()
+    const navigation = useKidFlowNavigation();
+    const theme = useTheme();
 
     /* ------ STATE ------ */
     const [flowStep, setFlowStep] = useState<Step>("loading");
@@ -56,8 +58,7 @@ export default function SafeAppsSelection() {
     const [loadingMessage, setLoadingMessage] = useState("Loading your apps...");
     const [classifiedApps, setClassifiedApps] = useState<AppItem[]>([]);
     const [hasInternet, setHasInternet] = useState(true);
-    const [forceClassification, setForceClassification] = useState(0); // counter
-
+    const [forceClassification, setForceClassification] = useState(0);
 
     /* ------ INTERNET LISTENER ------ */
     useEffect(() => NetInfo.addEventListener(state => setHasInternet(state.isConnected ?? false)), []);
@@ -84,39 +85,32 @@ export default function SafeAppsSelection() {
             );
             setLoadingProgress(0.7);
             return apps;
-        }
+        },
+        enabled: Platform.OS === "android",
     });
 
-
-
-
-    /* ------ CLASSIFY NEW APPS ------ */
+    /* ------ CLASSIFY APPS ------ */
     const classifyAppsMutation = useMutation({
         mutationFn: async (apps: AppItem[]) => {
+
+
             setFlowStep("classifying");
             setLoadingMessage("Analyzing apps for child safety...");
             setLoadingProgress(0.8);
 
-            console.log('about to send request to backend ');
-
-            const res = await fetch("http://192.168.125.124:3000/api/check", {
+            const res = await fetch("http://192.168.99.124:3000/api/check", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ appNames: apps.map(a => ({ packageName: a.packageName, appName: a.appName })) }),
             });
-
-
-            console.log('after sendign request to backend .....');
-
+            console.log('hey its about to classify .......................')
+            if (!res.ok) throw new Error("Failed to classify apps");
 
             const data = await res.json();
             setLoadingProgress(0.95);
             return data.apps;
         },
         onSuccess: (result, newApps) => {
-
-
-
             const safePackages = new Set(result.map((x: any) => x.packageName));
             const processedNewApps = newApps.map(a => ({ ...a, isKidSafe: safePackages.has(a.packageName) }));
 
@@ -125,7 +119,6 @@ export default function SafeAppsSelection() {
                 ...classifiedApps.filter(a => !processedNewApps.find(n => n.packageName === a.packageName)),
                 ...processedNewApps
             ];
-
 
             setClassifiedApps(mergedApps);
             setLoadingProgress(1);
@@ -137,33 +130,70 @@ export default function SafeAppsSelection() {
         }
     });
 
-
-
-
     /* ------ AUTO CLASSIFY NEW APPS ------ */
     useEffect(() => {
         if (!installedAppsQuery.data || !hasInternet) return;
 
-        const installedPackageNames = new Set(installedAppsQuery.data.map(a => a.packageName));
-
         const classifiedPackageNames = new Set(classifiedApps.map(a => a.packageName));
-
         const newApps = installedAppsQuery.data.filter(a => !classifiedPackageNames.has(a.packageName));
 
         if (newApps.length > 0) classifyAppsMutation.mutate(newApps);
         else setFlowStep("review"); // no new apps
     }, [installedAppsQuery.data, hasInternet, forceClassification]);
 
+    /* ------ SAVE SELECTIONS ------ */
+    const saveAppsMutation = useMutation({
+
+        mutationFn: async (allApps: AppItem[]) => {
+            // 1. get all package names from DB
+            const appNamesFromDb = await db
+                .select({ packageName: appTable.packageName })
+                .from(appTable);
+
+            const dbPackageSet = new Set(
+                appNamesFromDb.map(row => row.packageName)
+            );
+
+            // 2. find apps that are not in DB
+            const newApps = allApps.filter(
+                app => !dbPackageSet.has(app.packageName)
+            );
+
+            console.log("New apps to insert:", newApps.length);
+
+            // 3. nothing new → exit
+            if (newApps.length === 0) return;
+
+            // 4. insert only new apps
+            await db.insert(appTable).values(
+                newApps.map(app => ({
+                    packageName: app.packageName,
+                    appName: app.appName,
+                    versionName: app.versionName ?? null,
+                    icon: app.icon,
+                    isKidSafe: !!app.isKidSafe,
+                }))
+            );
+        }
+        ,
+        onSuccess: () => navigation.navigate("ProfileCreatedScreen"),
+        onError: async (err, apps, context) => {
+            console.error("Failed to save apps, retrying...", err);
+            // Retry after 1 second
+            setTimeout(() => saveAppsMutation.mutate(apps), 1000);
+        }
+    });
+
+    const saveSelections = () => {
+        if (classifiedApps.length === 0) return;
+        saveAppsMutation.mutate(classifiedApps);
+    };
+
     /* ------ HANDLERS ------ */
     const toggleAppPermission = (packageName: string) => {
         setClassifiedApps(prev =>
             prev.map(a => a.packageName === packageName ? { ...a, isKidSafe: !a.isKidSafe } : a)
         );
-    };
-
-    const saveSelections = () => {
-        saveKidSafePackages(classifiedApps);
-        navigation.navigate("ProfileCreatedScreen")
     };
 
     /* ---------------- RENDER ---------------- */
@@ -173,7 +203,7 @@ export default function SafeAppsSelection() {
                 <IconButton icon="alert-circle-outline" size={70} />
                 <Text style={styles.errTitle}>Something went wrong</Text>
                 <Text style={styles.errBody}>{loadingMessage}</Text>
-                <Button onPress={() => setForceClassification((prev) => prev + 1)} mode="contained" style={{ marginTop: 20 }}>Retry</Button>
+                <Button onPress={() => setForceClassification(prev => prev + 1)} mode="contained" style={{ marginTop: 20 }}>Retry</Button>
             </View>
         </SafeAreaView>
     );
@@ -190,17 +220,11 @@ export default function SafeAppsSelection() {
                 <FlashList
                     data={classifiedApps.filter(a => a.isKidSafe)}
                     keyExtractor={item => item.packageName}
-                    renderItem={({ item }) => (
-                        <KidSafeCard
-                            item={item}
-                            allowed={!!item.isKidSafe}
-                            onToggle={toggleAppPermission}
-                        />
-                    )}
+                    renderItem={({ item }) => <KidSafeCard item={item} allowed={!!item.isKidSafe} onToggle={toggleAppPermission} />}
                 />
             </View>
             <View style={{ padding: 24 }}>
-                <Button onPress={saveSelections} mode="contained" style={styles.saveBtn}>Save</Button>
+                <Button onPress={saveSelections} mode="contained" style={styles.saveBtn} loading={saveAppsMutation.isPending}>Save</Button>
             </View>
         </SafeAreaView>
     );
@@ -210,7 +234,7 @@ export default function SafeAppsSelection() {
         <SafeAreaView style={styles.container}>
             <View style={[styles.header, { paddingTop: insets.top }]}>
                 <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
-                <Text style={styles.headerTitle}>Checking Apps</Text>
+                <Text style={styles.headerTitle}>{flowStep === "loading" ? "Checking Apps" : "Processing"}</Text>
             </View>
             <View style={styles.center}>
                 <ActivityIndicator size="large" />

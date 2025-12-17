@@ -1,6 +1,5 @@
-
 import { isServiceEnabled } from '@/modules/expo-app-monitor';
-import { getKidSafePackages } from '@/storage/kid';
+import { getAllPackages } from '@/storage/kid';
 import { useEffect, useState } from 'react';
 import { AppItem } from '../../kidflow/SafeAppsSelection';
 
@@ -11,13 +10,18 @@ export function useLauncherData() {
 
     useEffect(() => {
         (async () => {
-            const [pkgs, ok] = await Promise.all([
-                getKidSafePackages(),
-                isServiceEnabled(),
-            ]);
-            setApps(pkgs);
-            setServiceOk(Boolean(ok));
-            setReady(true);
+            try {
+                const [pkgs, ok] = await Promise.all([
+                    getAllPackages(), // now fetching from DB
+                    isServiceEnabled(),
+                ]);
+                setApps(pkgs);
+                setServiceOk(Boolean(ok));
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setReady(true);
+            }
         })();
     }, []);
 

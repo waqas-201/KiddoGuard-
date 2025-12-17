@@ -1,5 +1,5 @@
 import { db, useDatabaseReady } from "@/db/db";
-import { parentTable } from "@/db/schema";
+import { appTable, parentTable } from "@/db/schema";
 import { loadStartupState, StartupState } from "@/storage/state/startup";
 import { MyTheme } from "@/theme";
 import React, { useEffect, useState } from "react";
@@ -16,9 +16,15 @@ export default function App() {
   useEffect(() => {
     (async () => {
       const s = await loadStartupState();
+      const data = await db.select().from(parentTable)
+      const apps = await db.select().from(appTable)
+
+
+
+
       setStartup(s);
     })();
-  }, []);
+  }, [success]);
 
   if (error) {
     return (

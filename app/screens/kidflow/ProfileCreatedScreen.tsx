@@ -1,17 +1,75 @@
-// app/kidFlow/ProfileCreatedScreen.tsx
-import { useKidFlowNavigation } from "@/app/navigation/hooks";
-import React from "react";
+// app/screens/kidflow/ProfileCreatedScreen.tsx
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, IconButton, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useKidFlowNavigation } from "@/app/navigation/hooks";
+import { db } from "@/db/db";
+import { childTable, parentTable } from "@/db/schema";
+import { kidDraft } from "@/storage/kid";
+
 export default function ProfileCreatedScreen() {
     const theme = useTheme();
-    const navigation = useKidFlowNavigation()
+    const navigation = useKidFlowNavigation();
+    const [loading, setLoading] = useState(false);
+
+    const handleProfileCreated = async () => {
+        /* ---------------- Parent ---------------- */
+        const parent = await db
+            .select({ id: parentTable.id })
+            .from(parentTable)
+            .get();
+
+        if (!parent) {
+            throw new Error("Parent not found");
+        }
+
+        const parentId = parent.id;
+
+        /* ---------------- Kid Draft ---------------- */
+        const name = kidDraft.getString("kid_name");
+        const age = kidDraft.getNumber("kid_age");
+        console.log(age);
+
+        const embedding = kidDraft.getString("kidFaceEmbedding");
+        const timeLimit = kidDraft.getNumber("time");
+        const isCompleted = kidDraft.getBoolean("isKidProfileCompleted") ?? false;
+        const data = {
+            name, age, embedding, timeLimit, isCompleted
+        }
+
+
+
+
+
+
+
+        try {
+            const resultFromInsert = await db.insert(childTable).values({
+                name: name!, // now guaranteed to be string
+                age: age!, // now guaranteed to be number
+                embedding: embedding!, // now guaranteed to be string
+                timeLimit: timeLimit!, // now guaranteed to be number
+                isKidProfileCompleted: isCompleted!,
+                parentId: parentId!,
+            });
+
+
+            if (resultFromInsert) {
+                kidDraft.clearAll()
+                navigation.navigate("ActivateLauncherScreen");
+            }
+
+        } catch (error) {
+            navigation.navigate('AddKid')
+        }
+    };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-
+        <SafeAreaView
+            style={[styles.container, { backgroundColor: theme.colors.background }]}
+        >
             {/* Header */}
             <View style={styles.header}>
                 <IconButton
@@ -20,13 +78,16 @@ export default function ProfileCreatedScreen() {
                     size={24}
                     onPress={() => navigation.goBack()}
                 />
-                <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '600', fontSize: 18 }}>
+                <Text
+                    variant="titleMedium"
+                    style={{ color: theme.colors.onSurface, fontWeight: "600" }}
+                >
                     Add New Kid Profile
                 </Text>
                 <View style={{ width: 48 }} />
             </View>
 
-            {/* Main Content */}
+            {/* Content */}
             <View style={styles.content}>
                 <View
                     style={[
@@ -35,22 +96,25 @@ export default function ProfileCreatedScreen() {
                     ]}
                 >
                     <View
-                        style={[
-                            styles.innerCircle,
-                            { backgroundColor: theme.colors.primary },
-                        ]}
+                        style={[styles.innerCircle, { backgroundColor: theme.colors.primary }]}
                     >
-                        <Text variant="displayMedium" style={styles.checkIcon}>
-                            ✓
-                        </Text>
+                        <Text style={styles.checkIcon}>✓</Text>
                     </View>
                 </View>
 
-                <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>
+                <Text
+                    variant="headlineLarge"
+                    style={[styles.title, { color: theme.colors.onBackground }]}
+                >
                     Profile Created!
                 </Text>
-                <Text variant="bodyMedium" style={[styles.description, { color: theme.colors.onSurface }]}>
-                    You've successfully set up face authentication, time limits, and app whitelisting for your child's profile.
+
+                <Text
+                    variant="bodyMedium"
+                    style={[styles.description, { color: theme.colors.onSurface }]}
+                >
+                    You've successfully set up face authentication, time limits, and app
+                    whitelisting for your child's profile.
                 </Text>
             </View>
 
@@ -58,9 +122,9 @@ export default function ProfileCreatedScreen() {
             <View style={styles.footer}>
                 <Button
                     mode="contained"
-                 onPress={() => navigation.navigate("ActivateLauncherScreen")}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={styles.buttonLabel}
+                    onPress={handleProfileCreated}
+                    loading={loading}
+                    disabled={loading}
                     style={[styles.button, { backgroundColor: theme.colors.primary }]}
                 >
                     Next
@@ -69,6 +133,8 @@ export default function ProfileCreatedScreen() {
         </SafeAreaView>
     );
 }
+
+/* ---------------- Styles ---------------- */
 
 const styles = StyleSheet.create({
     container: {
@@ -86,7 +152,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 24,
-        textAlign: "center",
     },
     outerCircle: {
         height: 128,
@@ -124,13 +189,6 @@ const styles = StyleSheet.create({
     button: {
         width: "100%",
         maxWidth: 300,
-        borderRadius: 121,
-        elevation: 2,
-    },
-    buttonContent: {
-        paddingVertical: 6,
-    },
-    buttonLabel: {
-        fontWeight: "bold",
+        borderRadius: 24,
     },
 });

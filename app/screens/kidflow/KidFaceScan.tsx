@@ -17,7 +17,7 @@ import { getImageEmbeddingAsync, loadModelAsync, logImageUriAsync } from "@/modu
 import { kidDraft } from "@/storage/kid";
 
 export default function KidFaceScan() {
-    const navigation = useKidFlowNavigation();
+    const navigation = useKidFlowNavigation()
     const device = useCameraDevice("front");
     const { hasPermission, requestPermission } = useCameraPermission();
     const cameraRef = useRef<VisionCamera>(null);
@@ -25,6 +25,7 @@ export default function KidFaceScan() {
     const captureCount = useRef(0);
     const lastCapture = useRef(0);
     const scanning = useRef(false);
+    const isCapturing = useRef(false); // mutex to prevent multiple .takePhoto()
 
     const [status, setStatus] = useState<"idle" | "scanning" | "success">("idle");
     const [progress, setProgress] = useState(0);
@@ -54,7 +55,10 @@ export default function KidFaceScan() {
         return () => stopListeners();
     }, []);
 
+    // insert data to db 
     const captureFacePhotoAndGenerateEmbeddings = async () => {
+        if (isCapturing.current) return; // prevent duplicate captures
+        isCapturing.current = true;
         try {
             if (!cameraRef.current) return;
             const photo = await cameraRef.current.takePhoto();
@@ -65,17 +69,19 @@ export default function KidFaceScan() {
             await loadModelAsync();
             const embedding = await getImageEmbeddingAsync(photo.path);
 
-            let existingRaw = kidDraft.getString("KidFaceEmbeddings");
+            let existingRaw = kidDraft.getString("kidFaceEmbedding");
             let existing = existingRaw ? JSON.parse(existingRaw) : [];
 
             if (existing.length >= 3) existing = []; // reset if already 3 embeddings
 
             existing.push(embedding);
-            kidDraft.set("KidFaceEmbeddings", JSON.stringify(existing));
+            kidDraft.set("kidFaceEmbedding", JSON.stringify(existing));
             console.log(`💾 Saved embedding #${existing.length}`);
         } catch (err) {
             console.error("❌ Photo capture error:", err);
             setMessage("Something went wrong while capturing. Please try again.");
+        } finally {
+            isCapturing.current = false;
         }
     };
 
@@ -85,10 +91,20 @@ export default function KidFaceScan() {
         if (faces.length === 0) return;
 
         const face = faces[0];
-        const leftOpen = face.leftEyeOpenProbability ?? 1;
-        const rightOpen = face.rightEyeOpenProbability ?? 1;
-        const eyesOpenEnough = leftOpen > 0.5 && rightOpen > 0.5;
 
+        // ✅ SAFE eye check
+        const leftProb = face.leftEyeOpenProbability;
+        const rightProb = face.rightEyeOpenProbability;
+
+        if (leftProb == null || rightProb == null) {
+            if (scanning.current) {
+                scanning.current = false;
+                setMessage("👁 Please position your face clearly — couldn't detect eyes.");
+            }
+            return;
+        }
+
+        const eyesOpenEnough = leftProb > 0.6 && rightProb > 0.6;
         if (!eyesOpenEnough) {
             if (scanning.current) {
                 scanning.current = false;
@@ -117,8 +133,9 @@ export default function KidFaceScan() {
                 captureCount.current = 0;
                 setProgress(100);
                 setStatus("success");
+                kidDraft.set('isKidProfileCompleted', true)
                 setMessage("✅ All 3 face scans completed successfully! Redirecting...");
-                setTimeout(() => navigation.navigate("SafeAppsSelection"), 1000);
+                setTimeout(() => navigation.navigate('SafeAppsSelection'), 1000);
             }
         }
     });
