@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import ActivateLauncherModal from "../components/ActivateLauncherModal";
+import FaceAuth from "../screens/faceAuth/faceAuth";
 import KidFlowStack from "./KidFlowStack";
 import LauncherStack from "./LauncherStack";
 import ParentFlowStack from "./ParentFlowStack";
@@ -44,6 +45,7 @@ export default function AppNavigator({ startup }: { startup: StartupState }) {
                 <Stack.Screen name="ParentFlow" component={ParentFlowStack} />
                 <Stack.Screen name="KidFlow" component={KidFlowStack} />
                 <Stack.Screen name="LauncherStack" component={LauncherStack} />
+                    <Stack.Screen name="FaceAuth" component={FaceAuth} /> 
                 <Stack.Screen name="Tabs" component={Tabs} />
             </Stack.Navigator>
         </NavigationContainer>

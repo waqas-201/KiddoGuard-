@@ -32,6 +32,10 @@ export type TabsParamList = {
 };
 
 
+export type FaceAuthParamsList = {
+    FaceAuth: undefined
+}
+
 // Root stack (AppNavigator)
 export type RootStackParamList = {
     ParentFlow: undefined; // No params

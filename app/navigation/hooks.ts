@@ -1,6 +1,6 @@
 import { useNavigation as useNav } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { KidFlowStackParamList, LauncherStackParamList, ParentFlowStackParamList, RootStackParamList, TabsParamList } from "./types";
+import { FaceAuthParamsList, KidFlowStackParamList, LauncherStackParamList, ParentFlowStackParamList, RootStackParamList, TabsParamList } from "./types";
 
 // Typed hooks for ParentFlow
 export const useParentFlowNavigation = () =>
@@ -21,3 +21,8 @@ export const useTabsNavigation = () =>
 
 export const useRootNavigation = () =>
     useNav<NativeStackNavigationProp<RootStackParamList>>();
+
+
+export const useFaceAuthNavigation = () => {
+    useNav<NativeStackNavigationProp<FaceAuthParamsList>>
+}
