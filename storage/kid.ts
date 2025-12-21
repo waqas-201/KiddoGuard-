@@ -1,4 +1,4 @@
-import { AppItem } from "@/app/screens/kidflow/SafeAppsSelection";
+import { AppItem } from '@/app/screens/kidflow/SafeAppsSelection';
 import { db } from '@/db/db';
 import { appTable } from '@/db/schema';
 import { createMMKV } from "react-native-mmkv";

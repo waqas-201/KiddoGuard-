@@ -29,7 +29,6 @@
         "android.permission.CAMERA"
       ]
     },
-    
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
@@ -52,6 +51,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0ffdda0a-f97d-4445-8193-f3a7976fbe04"
+      }
     }
   }
 }

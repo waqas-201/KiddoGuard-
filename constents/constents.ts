@@ -1,1 +1,1 @@
-const classification_server_url = ''
+export const classification_server_url = 'http://192.168.84.124:3000/'

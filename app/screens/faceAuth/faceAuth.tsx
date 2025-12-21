@@ -1,7 +1,7 @@
-import { setUser } from "@/app/features/sessionSlice";
 import { useRootNavigation } from "@/app/navigation/hooks";
 import { db } from "@/db/db";
 import { childTable, parentTable } from "@/db/schema";
+import { setUser } from "@/features/sessionSlice";
 import { getImageEmbeddingAsync, loadModelAsync } from "@/modules/expo-face-embedder";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -68,111 +68,7 @@ export default function FaceAuth() {
         return () => stopListeners();
     }, [hasPermission]);
 
-    // const handleDetectedFaces = Worklets.createRunOnJS(async (faces: Face[]) => {
-    //     if (faces.length === 0 || status === "recognizing" || status === "success") return;
 
-    //     const face = faces[0];
-    //     const leftEye = face.landmarks?.LEFT_EYE;
-    //     const rightEye = face.landmarks?.RIGHT_EYE;
-    //     const leftOpen = face.leftEyeOpenProbability ?? 0;
-    //     const rightOpen = face.rightEyeOpenProbability ?? 0;
-
-    //     if (!leftEye || !rightEye) {
-    //         setMessage("Make sure both eyes are visible in frame.");
-    //         return;
-    //     }
-
-    //     // 👁 Eye openness
-    //     const eyesOpenEnough = leftOpen > 0.6 && rightOpen > 0.6;
-
-    //     // 📏 Face geometry info
-    //     const frameWidth = 720;
-    //     const frameHeight = 960; // approximate 4:3 ratio
-    //     const { width: faceWidth, height: faceHeight, x, y } = face.bounds;
-    //     const faceCoverage = faceWidth / frameWidth;
-
-    //     // Center of face
-    //     const faceCenterX = x + faceWidth / 2;
-    //     const faceCenterY = y + faceHeight / 2;
-
-    //     // Relative position from frame center
-    //     const horizontalOffset = Math.abs(faceCenterX - frameWidth / 2) / frameWidth;
-    //     const verticalOffset = Math.abs(faceCenterY - frameHeight / 2) / frameHeight;
-
-    //     // Distance between eyes
-    //     const eyeDistance = Math.abs(leftEye.x - rightEye.x);
-    //     const relativeEyeDistance = eyeDistance / faceWidth;
-
-    //     // 🚫 Full-face validation
-    //     if (!eyesOpenEnough) {
-    //         setMessage("👁 Keep your eyes open and look straight.");
-    //         return;
-    //     }
-
-    //     if (relativeEyeDistance < 0.20) {
-    //         setMessage("Move a bit closer — face too small.");
-    //         return;
-    //     }
-
-    //     if (faceCoverage < 0.35) {
-    //         setMessage("Bring your full face into the frame.");
-    //         return;
-    //     }
-
-    //     if (horizontalOffset > 0.25 || verticalOffset > 0.25) {
-    //         setMessage("Center your face in the frame.");
-    //         return;
-    //     }
-
-    //     if (faceCoverage > 0.70) {
-    //         setMessage("You're too close — move slightly back.");
-    //         return;
-    //     }
-
-    //     // ✅ If all checks pass — proceed with recognition
-    //     setStatus("recognizing");
-    //     setMessage("Analyzing face...");
-
-    //     try {
-    //         const photo = await cameraRef.current?.takePhoto();
-    //         if (!photo) {
-    //             setStatus("idle");
-    //             return;
-    //         }
-
-    //         const currentEmbedding = await getImageEmbeddingAsync(photo.path);
-    //         const storedRaw = await getParentEmbeddings()
-    //         if (!storedRaw) {
-    //             setMessage("No face registered. Please register first.");
-    //             return;
-    //         }
-
-    //         const storedEmbeddings: number[][] = JSON.parse(storedRaw);
-    //         const similarities = storedEmbeddings.map((emb) =>
-    //             cosineSimilarity(currentEmbedding, emb)
-    //         );
-    //         const maxSim = Math.max(...similarities);
-    //         console.log("🧠 Similarities:", similarities, "Max:", maxSim);
-
-    //         const threshold = 0.85;
-    //         if (maxSim >= threshold) {
-    //             setStatus("success");
-    //             setMessage("✅ Face recognized!");
-    //             setTimeout(() => navigation.navigate('Tabs' , {screen:'KidsTab'}), 120);
-    //         } else {
-    //             setStatus("failed");
-    //             setMessage("❌ Face not recognized. Try again...");
-    //             setTimeout(() => {
-    //                 setStatus("idle");
-    //                 setMessage("Align your face to unlock...");
-    //             }, 2000);
-    //         }
-    //     } catch (err) {
-    //         console.error("Face recognition error:", err);
-    //         setMessage("Error while recognizing face");
-    //         setStatus("failed");
-    //     }
-    // });
     const handleDetectedFaces = Worklets.createRunOnJS(async (faces: Face[]) => {
         if (faces.length === 0 || status !== "idle") return;
 
@@ -245,43 +141,43 @@ export default function FaceAuth() {
             }
 
             const currentEmbedding = await getImageEmbeddingAsync(photo.path);
-            const THRESHOLD = 0.85;
+            const THRESHOLD = 0.75;
 
             /* ============================
                1️⃣ TRY PARENT FIRST
                ============================ */
-             const parent = await db.select().from(parentTable).get();
-             let parentMatched = false;
+            const parent = await db.select().from(parentTable).get();
+            let parentMatched = false;
 
-             if (parent?.embedding) {
-                 const parentEmbedding: number[][] = JSON.parse(parent.embedding);
-                
+            if (parent?.embedding) {
+                const parentEmbedding: number[][] = JSON.parse(parent.embedding);
 
 
-                 for (const emb of parentEmbedding) {
-                     const score = cosineSimilarity(currentEmbedding, emb);
-                     console.log("🧠 Parent similarity:", score);
 
-                     if (!Number.isNaN(score) && score >= THRESHOLD) {
-                         parentMatched = true;
-                         break;
-                     }
-                 }
+                for (const emb of parentEmbedding) {
+                    const score = cosineSimilarity(currentEmbedding, emb);
+                    console.log("🧠 Parent similarity:", score);
 
-                 if (parentMatched) {
-                     console.log("👨 Parent matched:", parent);
-                     dispatch(setUser({
-                         id: parent.id,
-                         role: "parent",
-                         name: parent.name
-                     }));
-                     setStatus("success");
-                     setMessage("✅ Parent recognized");
-                     return;
-                 }
+                    if (!Number.isNaN(score) && score >= THRESHOLD) {
+                        parentMatched = true;
+                        break;
+                    }
+                }
 
-               
-             }
+                if (parentMatched) {
+                    console.log("👨 Parent matched:", parent);
+                    dispatch(setUser({
+                        id: parent.id,
+                        role: "parent",
+                        name: parent.name
+                    }));
+                    setStatus("success");
+                    setMessage("✅ Parent recognized");
+                    return;
+                }
+
+
+            }
 
             /* ============================
                2️⃣ TRY CHILDREN

@@ -1,4 +1,5 @@
 import { useKidFlowNavigation } from "@/app/navigation/hooks";
+import { classification_server_url } from "@/constents/constents";
 import { db } from "@/db/db";
 import { appTable } from "@/db/schema";
 import { getAppIcon, getInstalledApps } from "@/modules/expo-installed-apps";
@@ -98,7 +99,7 @@ export default function SafeAppsSelection() {
             setLoadingMessage("Analyzing apps for child safety...");
             setLoadingProgress(0.8);
 
-            const res = await fetch("http://192.168.99.124:3000/api/check", {
+            const res = await fetch(`${classification_server_url}/api/check`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ appNames: apps.map(a => ({ packageName: a.packageName, appName: a.appName })) }),

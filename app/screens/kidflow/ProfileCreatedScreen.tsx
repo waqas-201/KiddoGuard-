@@ -35,9 +35,7 @@ export default function ProfileCreatedScreen() {
         const embedding = kidDraft.getString("kidFaceEmbedding");
         const timeLimit = kidDraft.getNumber("time");
         const isCompleted = kidDraft.getBoolean("isKidProfileCompleted") ?? false;
-        const data = {
-            name, age, embedding, timeLimit, isCompleted
-        }
+
 
 
 

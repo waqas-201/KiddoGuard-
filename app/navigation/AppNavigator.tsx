@@ -1,60 +1,56 @@
-import { StartupState } from "@/storage/state/startup";
-import { NavigationContainer } from "@react-navigation/native";
+
+import { useDatabaseReady } from "@/db/db";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
-import ActivateLauncherModal from "../components/ActivateLauncherModal";
-import FaceAuth from "../screens/faceAuth/faceAuth";
+import { useEffect } from "react";
+import { Text, View } from "react-native";
+import { useSelector } from "react-redux";
+import FaceAuthStack from "./faceAuthStack";
 import KidFlowStack from "./KidFlowStack";
 import LauncherStack from "./LauncherStack";
 import ParentFlowStack from "./ParentFlowStack";
+import { useStartup } from "./StartupContext";
 import Tabs from "./TabsNavigator";
+import { useNavigationFlow } from "./useNavigationFlow";
 
-export default function AppNavigator({ startup }: { startup: StartupState }) {
+const Stack = createNativeStackNavigator();
 
-    const Stack = createNativeStackNavigator();
-    const [showLauncherModal, setShowLauncherModal] = useState(false);
+export default function AppNavigator() {
+    const { success, error } = useDatabaseReady();
+    const user = useSelector((state: any) => state.session.currentUser);
+    const { startup, refreshStartup } = useStartup()
+
+// Function to refresh startup state from DB
+
     useEffect(() => {
-        // Show modal on app load if kid profile is done but launcher isn't active
-        if (startup.isKidProfileCompleted && !startup.isDefaultLauncher) {
-            setShowLauncherModal(true);
-        }
-    }, [startup]);
+        if (success) refreshStartup();
+    }, [success]);
 
+    const flow = useNavigationFlow(startup, user);
 
-    let initialRoute: string;
-
-    if (!startup.isParentProfileCompleted) {  // false !false = true so false become true then we set inittial it mean yes parent profile is not completed 
-        initialRoute = "ParentFlow";
-    } else if (!startup.isKidProfileCompleted) { // same here 
-        initialRoute = "Tabs"; // kid setup
-    } else if (startup.isDefaultLauncher && startup.isKidProfileCompleted) {  // when both true 
-        initialRoute = "LauncherStack";
-    } else {
-        initialRoute = "Tabs";   // if none of above meet 
-    }
-
-    console.log('initial route is ==', initialRoute);
+    if (error) return <View><Text>DB Error</Text></View>;
+    if (flow === 'LOADING') return <View><Text>Loading...</Text></View>;
 
     return (
-        <>
-        <NavigationContainer>
-            <Stack.Navigator
-                initialRouteName={initialRoute}
-                screenOptions={{ headerShown: false }}
-            >
-                <Stack.Screen name="ParentFlow" component={ParentFlowStack} />
-                <Stack.Screen name="KidFlow" component={KidFlowStack} />
-                <Stack.Screen name="LauncherStack" component={LauncherStack} />
-                    <Stack.Screen name="FaceAuth" component={FaceAuth} /> 
-                <Stack.Screen name="Tabs" component={Tabs} />
-            </Stack.Navigator>
-        </NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {flow === 'ONBOARDING' && (
+                <Stack.Screen name="ParentFlowStack" component={ParentFlowStack} />
+            )}
 
-            {/* GLOBAL MODAL */}
-            <ActivateLauncherModal
-                visible={showLauncherModal}
-                onClose={() => setShowLauncherModal(false)}
-            />
-        </>
+            {flow === 'UNAUTHENTICATED' && (
+                <Stack.Screen name="FaceAuth" component={FaceAuthStack} />
+            )}
+
+            {flow === 'PARENT_HOME' && (
+                <Stack.Screen name="Tabs" component={Tabs} />
+            )}
+
+            {flow === 'LAUNCHER' && (
+                <Stack.Screen name="LauncherStack" component={LauncherStack} />
+            )}
+
+            {/* If KidFlow is a setup screen, it should be part of ONBOARDING or TABS logic */}
+            <Stack.Screen name="KidFlow" component={KidFlowStack} />
+
+        </Stack.Navigator>
     );
 }

@@ -5,7 +5,7 @@ import { ExpoAppMonitorModuleEvents } from './ExpoAppMonitor.types';
 declare class ExpoAppMonitorModule extends NativeModule<ExpoAppMonitorModuleEvents> {
 
   setValueAsync(): Promise<void>;       // async function
-  isServiceEnabled(): Promise<Boolean>
+  isServiceEnabled(): boolean
 
 
 }

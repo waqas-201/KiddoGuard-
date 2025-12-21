@@ -13,19 +13,6 @@ export const loadStartupState = async (): Promise<StartupState> => {
     const parent = await db.select().from(parentTable).get()
     const kid = await db.select().from(childTable).get()
 
-
-    console.log('-----------------------------------------------------------------')
-
-    console.log(kid)
-
-    console.log('-----------------------------------------------------------------')
-
-
-    console.log('parent table ', parent);
-
-
-
-
     const isParentProfileCompleted = parent?.isParentProfileCompleted ?? false;
     console.log('isParentProfileCompleted', isParentProfileCompleted);
     const isKidProfileCompleted = kid?.isKidProfileCompleted ?? false

@@ -1,7 +1,8 @@
+import { useRootNavigation } from "@/app/navigation/hooks";
+import { useStartup } from "@/app/navigation/StartupContext";
 import { db } from "@/db/db";
 import { parentTable } from "@/db/schema";
 import { parentDraft } from "@/storage/Parent";
-import { useNavigation } from "@react-navigation/native";
 import { useMutation } from "@tanstack/react-query";
 import React, { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
@@ -13,6 +14,8 @@ import { Text } from "react-native-paper";
  * Intentionally simple – no idempotence, no guards.
  */
 async function saveParentProfile() {
+
+
     const name = parentDraft.getString("parentName");
     const embeddings = parentDraft.getString("parentFaceEmbedding");
     const isCompleted = parentDraft.getBoolean("isParentProfileCompleted");
@@ -38,13 +41,15 @@ async function saveParentProfile() {
 }
 
 export default function SaveParentProfileScreen() {
-    const navigation = useNavigation<any>();
+    const navigation = useRootNavigation();
+    const { refreshStartup } = useStartup()
 
     const saveMutation = useMutation({
         mutationFn: saveParentProfile,
         onSuccess: () => {
             parentDraft.clearAll()
-            navigation.replace("Tabs", { screen: "KidsTab" });
+            refreshStartup()
+            // navigation.replace("Tabs", { screen: "KidsTab" });
 
         },
         onError: (error) => {

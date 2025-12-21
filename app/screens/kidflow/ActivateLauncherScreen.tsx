@@ -1,6 +1,5 @@
 import { useKidFlowNavigation, useRootNavigation } from "@/app/navigation/hooks";
 import { isDefaultLauncher, requestSetDefaultLauncher } from "@/modules/expo-launcher";
-import { kidDraft } from "@/storage/kid";
 import React, { useEffect } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import { Button, IconButton, Text, useTheme } from "react-native-paper";
@@ -71,7 +70,6 @@ export default function ActivateLauncherScreen() {
                         () => {
                             
                             requestSetDefaultLauncher()
-                            kidDraft.set("isKidProfileCompleted" , true)
                         }
                     
                     

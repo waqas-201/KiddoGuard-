@@ -7,6 +7,7 @@ import {
 import React, { PropsWithChildren, useEffect } from "react";
 import { PaperProvider } from "react-native-paper";
 import { Provider } from 'react-redux';
+import { StartupProvider } from "../navigation/StartupContext";
 import { setupOnlineManager } from "../utils/onlineManager";
 
 const queryClient = new QueryClient({
@@ -28,12 +29,13 @@ export function Providers({ children }: PropsWithChildren) {
 
     return (
         <PaperProvider theme={MyTheme}>
-
+            <StartupProvider>
             <Provider store={store}>
         <QueryClientProvider client={queryClient}>
             {children}
         </QueryClientProvider>
             </Provider>
+            </StartupProvider>
         </PaperProvider>
     );
 }
