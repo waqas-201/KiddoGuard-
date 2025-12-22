@@ -1,4 +1,5 @@
 import { openApp } from '@/modules/expo-launcher';
+import { RootState } from '@/store';
 import { FlashList } from "@shopify/flash-list";
 import React, { useEffect, useRef } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 import { useLauncherData } from './hooks/useLauncherData';
 
 const { width } = Dimensions.get('window');
@@ -21,8 +23,11 @@ const SPACING = 16;
 const TILE_SIZE = (width - (SPACING * (COLUMN_COUNT + 1))) / COLUMN_COUNT;
 
 export default function LauncherScreen() {
-    const { apps, ready } = useLauncherData();
+
+    const role = useSelector((state: RootState) => state.session.currentUser?.role)
+    const { apps, ready } = useLauncherData({ role });
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    console.log(apps.length);
 
     useEffect(() => {
         if (ready) {

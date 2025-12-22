@@ -49,13 +49,13 @@ export default function ActivateLauncherModal({ visible, onClose }: Props) {
                         Activate
                     </Button>
 
-                    <Button
+                    {/* <Button
                         mode="text"
                         onPress={onClose}
                         style={{ marginTop: 8 }}
                     >
                         Skip for now
-                    </Button>
+                    </Button> */}
                 </View>
             </View>
         </Modal>

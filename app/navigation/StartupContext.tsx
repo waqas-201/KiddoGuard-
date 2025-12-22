@@ -1,5 +1,5 @@
-import { loadStartupState, StartupState } from "@/storage/state/startup";
 import React, { createContext, useContext, useState } from "react";
+import { loadStartupState, StartupState } from "./startup";
 
 type StartupContextType = {
     startup: StartupState | null;
@@ -12,6 +12,9 @@ export const StartupProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [startup, setStartup] = useState<StartupState | null>(null);
 
     const refreshStartup = async () => {
+
+        console.log('refresh startup called ');
+
         const s = await loadStartupState();
         setStartup(s);
     };

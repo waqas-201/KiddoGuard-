@@ -34,17 +34,33 @@ export function getKidSafePackages(): AppItem[] {
     }
 }
 
+export type roleType = {
+    role: "parent" | "child"
+}
+export async function getAllPackages(role: string | undefined): Promise<AppItem[] | []> {
 
-export async function getAllPackages(): Promise<AppItem[]> {
+
     try {
         const rows = await db.select().from(appTable);
-        // Map database rows to AppItem, convert null versionName to undefined
-        return rows.map(row => ({
+
+        const apps = rows.map(row => ({
             packageName: row.packageName,
             appName: row.appName,
             isKidSafe: row.isKidSafe,
             icon: row.icon,
         }));
+        const kidApps = apps.filter(((app) => app.isKidSafe === true))
+
+        if (!role) return []
+        if (role === 'child') {
+            return kidApps
+        } else {
+            return apps
+        }
+
+
+
+        // Map database rows to AppItem, convert null versionName to undefined
     } catch (error) {
         console.error("Failed to get kid safe packages:", error);
         return [];

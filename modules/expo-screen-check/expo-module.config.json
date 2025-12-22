@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ExpoScreenCheckModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.screencheck.ExpoScreenCheckModule"]
+  }
+}

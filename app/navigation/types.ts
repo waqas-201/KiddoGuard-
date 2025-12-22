@@ -36,6 +36,11 @@ export type FaceAuthParamsList = {
     FaceAuth: undefined
 }
 
+
+export type LockOverLayParamsList = {
+    LockOverlay: undefined
+}
+
 // Root stack (AppNavigator)
 export type RootStackParamList = {
     ParentFlow: undefined; // No params

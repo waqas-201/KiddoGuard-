@@ -1,4 +1,4 @@
-import { useRootNavigation } from "@/app/navigation/hooks";
+import { useStartup } from "@/app/navigation/StartupContext";
 import { db } from "@/db/db";
 import { childTable, parentTable } from "@/db/schema";
 import { setUser } from "@/features/sessionSlice";
@@ -36,7 +36,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 export default function FaceAuth() {
-    const navigation = useRootNavigation()
     const device = useCameraDevice("front");
     const { hasPermission, requestPermission } = useCameraPermission();
     const cameraRef = useRef<VisionCamera>(null);
@@ -45,6 +44,10 @@ export default function FaceAuth() {
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<"idle" | "recognizing" | "success" | "failed">("idle");
     const dispatch = useDispatch()
+    const { refreshStartup } = useStartup()
+
+
+
     const faceOptions: FrameFaceDetectionOptions = {
         performanceMode: "accurate",
         landmarkMode: "all",
@@ -141,7 +144,7 @@ export default function FaceAuth() {
             }
 
             const currentEmbedding = await getImageEmbeddingAsync(photo.path);
-            const THRESHOLD = 0.75;
+            const THRESHOLD = 0.60;
 
             /* ============================
                1️⃣ TRY PARENT FIRST
@@ -171,7 +174,9 @@ export default function FaceAuth() {
                         role: "parent",
                         name: parent.name
                     }));
+                    refreshStartup()
                     setStatus("success");
+
                     setMessage("✅ Parent recognized");
                     return;
                 }
@@ -205,6 +210,8 @@ export default function FaceAuth() {
                             parentId: child.parentId
                         }));
                         setMessage(`✅ ${child.name} recognized`);
+                        refreshStartup()
+
                         return;
                     }
                 }

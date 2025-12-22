@@ -14,12 +14,18 @@ export interface SessionUser {
 
 export interface SessionState {
     currentUser: SessionUser | null;
+
     status: "unknown" | "unauthenticated" | "authenticated";
+    requireReauth: boolean; // new flag
+
 }
 
 const initialState: SessionState = {
     currentUser: null,
     status: "unknown",
+    requireReauth: false, // initially false
+
+
 };
 
 const sessionSlice = createSlice({
@@ -34,8 +40,16 @@ const sessionSlice = createSlice({
             state.currentUser = null;
             state.status = "unauthenticated";
         },
+
+        requireReauth(state) {
+            state.requireReauth = true; // mark that reauth is required
+        },
+        clearRequireReauth(state) {
+            state.requireReauth = false; // called after successful FaceAuth
+        },
+
     },
 });
 
-export const { setUser, resetSession } = sessionSlice.actions;
+export const { setUser, resetSession, requireReauth, clearRequireReauth } = sessionSlice.actions;
 export default sessionSlice.reducer;
