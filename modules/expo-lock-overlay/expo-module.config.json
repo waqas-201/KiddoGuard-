@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ExpoLockOverlayModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.lockoverlay.ExpoLockOverlayModule"]
+  }
+}

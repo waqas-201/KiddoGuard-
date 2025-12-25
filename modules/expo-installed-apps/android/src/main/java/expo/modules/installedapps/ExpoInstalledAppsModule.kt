@@ -2,6 +2,7 @@ package expo.modules.installedapps
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.Canvas
@@ -21,32 +22,34 @@ class ExpoInstalledAppsModule : Module() {
     Name("ExpoInstalledApps")
 
     // Get all 3rd-party installed apps (system apps skipped)
-    AsyncFunction("getInstalledApps") { promise: Promise ->
-      try {
+  AsyncFunction("getInstalledApps") { promise: Promise ->
+    try {
         val context = appContext.reactContext ?: throw Exception("Context is null")
         val pm: PackageManager = context.packageManager
-        val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        
+        // This intent looks for the "Front Door" of every app
+        val mainIntent = Intent(Intent.ACTION_MAIN, null)
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
+
+        // Query only activities that match the Launcher category
+        val resolvedInfos = pm.queryIntentActivities(mainIntent, 0)
         val apps = JSONArray()
 
-        for (appInfo in packages) {
-          // Include only 3rd-party apps
-          val isThirdParty = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 ||
-                             (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-          if (!isThirdParty) continue
-
-          val app = JSONObject().apply {
-            put("packageName", appInfo.packageName)
-            put("appName", appInfo.loadLabel(pm).toString())
-          }
-
-          apps.put(app)
+        for (resolveInfo in resolvedInfos) {
+            val app = JSONObject().apply {
+                put("packageName", resolveInfo.activityInfo.packageName)
+                put("appName", resolveInfo.loadLabel(pm).toString())
+                // Optionally add the activity name if you need to launch a specific activity
+                put("className", resolveInfo.activityInfo.name) 
+            }
+            apps.put(app)
         }
 
         promise.resolve(apps.toString())
-      } catch (e: Exception) {
+    } catch (e: Exception) {
         promise.reject("GET_APPS_ERROR", e.message, e)
-      }
     }
+}
 
     // Get icon for a single package on demand
     AsyncFunction("getAppIcon") { packageName: String, promise: Promise ->

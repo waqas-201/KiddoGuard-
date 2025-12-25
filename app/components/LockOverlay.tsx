@@ -1,33 +1,28 @@
-// LockOverlay.tsx
+// LockOverlayScreen.tsx
 import React from "react";
-import { Modal, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import FaceAuth from "../screens/faceAuth/faceAuth";
 
-interface LockOverlayProps {
-    visible: boolean;
-    onAuthSuccess: () => void;
-}
-
-export default function LockOverlay() {
+export default function LockOverlayScreen() {
     return (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            statusBarTranslucent
-        >
-            <TouchableWithoutFeedback>
-                <View style={styles.overlay}>
-                    
-                </View>
-            </TouchableWithoutFeedback>
-        </Modal>
+        <View style={styles.container}>
+            {/* Dark overlay background */}
+            <View style={styles.overlay} />
+
+            {/* Embedded FaceAuth */}
+            <FaceAuth />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    overlay: {
+    container: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.85)",
         justifyContent: "center",
         alignItems: "center",
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0,0,0,0.85)",
     },
 });

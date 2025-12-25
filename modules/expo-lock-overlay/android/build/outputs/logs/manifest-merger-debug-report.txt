@@ -1,0 +1,28 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:1:1-11:12
+INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:1:1-11:12
+	package
+		INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.SYSTEM_ALERT_WINDOW
+ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:3:3-75
+	android:name
+		ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:3:20-73
+application
+ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:5:3-9:17
+service#expo.modules.lockoverlay.OverlayService
+ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:6:5-8:34
+	android:exported
+		ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:8:7-31
+	android:name
+		ADDED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml:7:7-61
+uses-sdk
+INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml
+INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /home/waqas/work/my-app/KiddoGuard/modules/expo-lock-overlay/android/src/main/AndroidManifest.xml

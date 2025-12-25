@@ -8,6 +8,7 @@
     "scheme": "kiddoguard",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -15,6 +16,7 @@
       },
       "bundleIdentifier": "com.waqasd.KiddoGuard"
     },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -25,15 +27,25 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.waqasd.KiddoGuard",
-      "permissions": [
-        "android.permission.CAMERA"
-      ]
+      "permissions": ["android.permission.CAMERA"]
     },
+
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -48,10 +60,12 @@
       ],
       "react-native-vision-camera"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
       "eas": {
         "projectId": "0ffdda0a-f97d-4445-8193-f3a7976fbe04"

@@ -145,10 +145,9 @@ export default function FaceAuth() {
 
             const currentEmbedding = await getImageEmbeddingAsync(photo.path);
             const THRESHOLD = 0.60;
-
             /* ============================
-               1️⃣ TRY PARENT FIRST
-               ============================ */
+                           1️⃣ TRY PARENT FIRST
+                           ============================ */
             const parent = await db.select().from(parentTable).get();
             let parentMatched = false;
 
@@ -227,7 +226,7 @@ export default function FaceAuth() {
             setTimeout(() => {
                 setStatus("idle");
                 setMessage("Align your face to unlock...");
-            }, 2000);
+            }, 100);
         } catch (error) {
             console.error("Face recognition error:", error);
             setStatus("failed");

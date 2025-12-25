@@ -23,12 +23,13 @@ const SPACING = 16;
 const TILE_SIZE = (width - (SPACING * (COLUMN_COUNT + 1))) / COLUMN_COUNT;
 
 export default function LauncherScreen() {
+    console.log("from inside laucncher .........................");
 
     const role = useSelector((state: RootState) => state.session.currentUser?.role)
     const { apps, ready } = useLauncherData({ role });
     const fadeAnim = useRef(new Animated.Value(0)).current;
     console.log(apps.length);
-
+    const user = useSelector((state: RootState) => state.session.currentUser)
     useEffect(() => {
         if (ready) {
             Animated.timing(fadeAnim, {
@@ -39,6 +40,7 @@ export default function LauncherScreen() {
         }
     }, [ready]);
 
+
     if (!ready) {
         return (
             <View style={styles.centered}>
@@ -46,6 +48,7 @@ export default function LauncherScreen() {
             </View>
         );
     }
+
 
     return (
         <SafeAreaView style={styles.container}>

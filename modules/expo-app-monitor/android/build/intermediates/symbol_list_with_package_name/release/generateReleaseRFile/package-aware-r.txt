@@ -1,0 +1,2 @@
+expo.modules.appmonitor
+xml kid_accessibility_service_config

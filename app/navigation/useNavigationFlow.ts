@@ -15,14 +15,11 @@ export function useNavigationFlow(startup: StartupState | null) {
     // 1. App is still initializing DB/Storage
     if (!startup) return 'LOADING';
     // when device locked 
-    if (session.requireReauth) return 'LOCKED';
-
     // 2. Rule: First time load / Setup not done
     if (!startup.isParentProfileCompleted) return 'ONBOARDING';
 
     // 3. Rule: If not authenticated, always show FaceAuth
     if (!session.currentUser && startup.isParentProfileCompleted) return 'UNAUTHENTICATED';
-
 
     // 4. Rule: If user is a Child, they ONLY see the Launcher
     if (session.currentUser?.role === "child" && startup.isKidProfileCompleted && startup.isDefaultLauncher) return 'LAUNCHER';

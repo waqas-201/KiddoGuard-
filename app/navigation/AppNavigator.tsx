@@ -1,6 +1,8 @@
 import { useDatabaseReady } from "@/db/db";
-import { resetSession } from "@/features/sessionSlice";
+import { requireReauth, resetSession } from "@/features/sessionSlice";
+import { getInstalledApps } from "@/modules/expo-installed-apps";
 import { listenScreenState } from "@/modules/expo-screen-check";
+import ExpoScreenCheckModule from "@/modules/expo-screen-check/src/ExpoScreenCheckModule";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
@@ -18,64 +20,74 @@ const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
     const { success, error } = useDatabaseReady();
-    const { startup, refreshStartup } = useStartup()
-    const dispatch = useDispatch()
+    const { startup, refreshStartup } = useStartup();
 
 
+
+    const dispatch = useDispatch();
 
     useEffect(() => {
-        const sub = listenScreenState((state) => {
-            if (state === 'OFF') {
-                dispatch(resetSession())
-                console.log('[AUTH] screen off → reauth required');
+        const sub = listenScreenState(async (state) => {
+            if (state === "OFF") {
+                dispatch(requireReauth());
+                dispatch(resetSession());
+                await ExpoScreenCheckModule.goToHome()
+                await ExpoScreenCheckModule.resetLauncherStack()
+            }
+
+            if (state === "ON") {
+                console.log("[AUTH] screen on → stopping overlay");
+
             }
         });
 
         return () => sub.remove();
     }, []);
 
-
-
-
     useEffect(() => {
         if (success) refreshStartup();
     }, [success]);
 
 
+
+
+
     const flow = useNavigationFlow(startup);
-    const showLauncherModal = flow === 'SET_APP_AS_DEFAULT_LAUNCHER';
+
+    const showLauncherModal = flow === "SET_APP_AS_DEFAULT_LAUNCHER";
+    console.log('show modal  state ', showLauncherModal);
 
 
     if (error) return <View><Text>DB Error</Text></View>;
-    if (flow === 'LOADING') return <View><Text>Loading...</Text></View>;
+    if (flow === "LOADING") return <View><Text>Loading...</Text></View>;
+    console.log('current route is ', flow);
 
-    return (<>
-        <Stack.Navigator screenOptions={{ headerShown: false }} key={flow}>
-            {flow === 'ONBOARDING' && (
-                <Stack.Screen name="ParentFlowStack" component={ParentFlowStack} />
-            )}
+    return (
+        <>
+            <Stack.Navigator screenOptions={{ headerShown: false }} key={flow}>
+                {flow === "ONBOARDING" && (
+                    <Stack.Screen name="ParentFlowStack" component={ParentFlowStack} />
+                )}
 
-            {flow === 'UNAUTHENTICATED' && (
-                <Stack.Screen name="FaceAuth" component={FaceAuthStack} />
-            )}
+                {flow === "LAUNCHER" && (
+                    <Stack.Screen name="LauncherStack" component={LauncherStack} />
+                )}
+                {flow === "UNAUTHENTICATED" && (
+                    <Stack.Screen name="FaceAuth" component={FaceAuthStack} />
+                )}
 
-            {flow === 'PARENT_HOME' && (
-                <Stack.Screen name="Tabs" component={Tabs} />
-            )}
+                {flow === "PARENT_HOME" && (
+                    <Stack.Screen name="Tabs" component={Tabs} />
+                )}
 
-            {flow === 'LAUNCHER' && (
-                <Stack.Screen name="LauncherStack" component={LauncherStack} />
-            )}
 
-            {/* If KidFlow is a setup screen, it should be part of ONBOARDING or TABS logic */}
-            <Stack.Screen name="KidFlow" component={KidFlowStack} />
-        </Stack.Navigator>
+                <Stack.Screen name="KidFlow" component={KidFlowStack} />
+            </Stack.Navigator>
 
-        <ActivateLauncherModal
-            visible={showLauncherModal}
-            onClose={refreshStartup}
-        />
-
-    </>
+            <ActivateLauncherModal
+                visible={showLauncherModal}
+                onClose={refreshStartup}
+            />
+        </>
     );
 }
