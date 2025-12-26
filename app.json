@@ -58,7 +58,8 @@
           }
         }
       ],
-      "react-native-vision-camera"
+      "react-native-vision-camera",
+      "./withMyManifest.js"
     ],
 
     "experiments": {
