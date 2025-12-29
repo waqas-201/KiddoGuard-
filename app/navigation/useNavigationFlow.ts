@@ -9,7 +9,7 @@ export function useNavigationFlow(startup: StartupState | null) {
 
 
     const session = useSelector((state: RootState) => state.session)
-
+    const restriction = useSelector((state: RootState) => state.restriction);
 
 
     // 1. App is still initializing DB/Storage
@@ -18,11 +18,17 @@ export function useNavigationFlow(startup: StartupState | null) {
     // 2. Rule: First time load / Setup not done
     if (!startup.isParentProfileCompleted) return 'ONBOARDING';
 
+    // 2. THE MASTER RULE: If time is up, show TIMES_UP flow
+    if (session.currentUser?.role === "child" && restriction.isTimeExhausted) {
+        return 'TIMES_UP';
+    }
     // 3. Rule: If not authenticated, always show FaceAuth
     if (!session.currentUser && startup.isParentProfileCompleted) return 'UNAUTHENTICATED';
 
+
     // 4. Rule: If user is a Child, they ONLY see the Launcher
     if (session.currentUser?.role === "child" && startup.isKidProfileCompleted && startup.isDefaultLauncher) return 'LAUNCHER';
+
 
     if (session.currentUser?.role === "child" && startup.isKidProfileCompleted && !startup.isDefaultLauncher) return 'SET_APP_AS_DEFAULT_LAUNCHER'
     // 5. Rule: If user is a Parent

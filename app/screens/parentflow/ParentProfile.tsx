@@ -5,10 +5,32 @@ import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { IconButton, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 export default function ParentProfileScreen() {
     const theme = useTheme();
    const navigation = useParentFlowNavigation()
 
+    // // Inside your component:
+    // const handleTestTimer = async () => {
+    //     try {
+    //         console.log("Attempting to start native timer...");
+    //         const success = await TimeLimitModule.startCountdown(60); // 1 minute
+
+    //         if (success) {
+    //             Alert.alert("Success", "Check your notification bar!");
+    //         } else {
+    //             Alert.alert("Error", "Native module returned false.");
+    //         }
+    //     } catch (e: any) {
+    //         console.error("Native Bridge Failed:", e);
+    //         Alert.alert("Bridge Crash", e.message);
+    //     }
+    // };
+
+    
+
+    // Add this to your JSX:
+    // <Button title="Test Native Guard" onPress={handleTestTimer} />
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
             {/* Header */}

@@ -1,7 +1,19 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": [
+      "ESNext"
+    ],
+    "jsx": "react-native",
     "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "build",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "paths": {
       "@/*": [
         "./*"
@@ -9,9 +21,17 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*",
+    "app/navigation/**/*",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "app/navigation/faceAuthStack.sx"  ]
+    "expo-env.d.ts",
+    "/services"
+  ],
+  "exclude": [
+    "**/__tests__/*",
+    "**/__mocks__/*",
+    "**/__rsc_tests__/*",
+    "node_modules"
+  ],
+  "extends": "expo/tsconfig.base"
 }

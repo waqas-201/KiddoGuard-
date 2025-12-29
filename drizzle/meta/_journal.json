@@ -64,6 +64,20 @@
       "when": 1765989781139,
       "tag": "0008_polite_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1766767767384,
+      "tag": "0009_superb_hellcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1766851177000,
+      "tag": "0010_dapper_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

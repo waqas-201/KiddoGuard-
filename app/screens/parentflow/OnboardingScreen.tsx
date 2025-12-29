@@ -9,6 +9,10 @@ export default function OnboardingScreen() {
     const theme = useTheme();
     const navigation = useParentFlowNavigation()
 
+
+
+    // Add this to your JSX next to the start button:
+    // <Button title="Stop & Get Time" onPress={handleStopTimer} />
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <View style={styles.content}>
@@ -32,7 +36,11 @@ export default function OnboardingScreen() {
             <View style={styles.footer}>
                 <Button
                     mode="contained"
-                    onPress={() => navigation.navigate("ParentProfile")} // ✅ Correct case
+                    onPress={() =>
+                        navigation.navigate("ParentProfile")
+
+
+                    } // ✅ Correct case
                     style={[styles.button, { backgroundColor: theme.colors.primary }]}
                     labelStyle={{ fontSize: 16, fontWeight: "700", color: theme.colors.onPrimary }}
                 >

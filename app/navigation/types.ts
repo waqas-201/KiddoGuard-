@@ -41,6 +41,11 @@ export type LockOverLayParamsList = {
     LockOverlay: undefined
 }
 
+
+
+export type TiesUpParamsList = {
+    TimesUpScreen: undefined
+} 
 // Root stack (AppNavigator)
 export type RootStackParamList = {
     ParentFlow: undefined; // No params

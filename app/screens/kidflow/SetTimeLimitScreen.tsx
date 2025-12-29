@@ -10,15 +10,19 @@ export default function SetTimeLimitScreen() {
     const theme = useTheme();
     const navigation = useKidFlowNavigation();
 
-    // Initialize local state from MMKV
+    // Update your useState initialization:
     const [time, setTime] = useState<number>(() => {
-        const stored = kidDraft.getNumber("time");
-        return stored ?? 1; // default to 1h if not set
+        const storedSeconds = kidDraft.getNumber("time");
+        // Convert back to hours: 900 / 3600 = 0.25
+        return storedSeconds ? storedSeconds / 3600 : 1;
     });
-
     // Save the final value on "Save" click
     const handleKidPress = () => {
-        kidDraft.set("time", time);
+        // Example: 0.25h * 3600 = 900 seconds (15 minutes)
+        const timeInSeconds = Math.floor(time * 3600);
+
+        // 2. Save to your draft/database
+        kidDraft.set("time", timeInSeconds);
         navigation.navigate('KidFaceScan');
     };
 
@@ -59,7 +63,7 @@ export default function SetTimeLimitScreen() {
                         style={{ width: "100%", marginTop: 16 }}
                         minimumValue={0}
                         maximumValue={12}
-                        step={0.25} // 15min steps
+                        step={0.01} // 15min steps
                         value={time}
                         minimumTrackTintColor={theme.colors.primary}
                         maximumTrackTintColor={theme.colors.surfaceVariant || "#e0e0e0"}

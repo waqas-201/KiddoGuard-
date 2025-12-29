@@ -1,5 +1,5 @@
-import { db } from "@/db/db";
-import { parentTable } from "@/db/schema";
+import { db } from "../../db/db";
+import { parentTable } from "../../db/schema";
 
 
 

@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
+import restrictionReducer from './features/restrictionSlice'
 import sessionReducer from './features/sessionSlice'
 
 export const store = configureStore({
     reducer: {
-        session: sessionReducer
+        session: sessionReducer,
+        restriction: restrictionReducer, // Add this line
     },
 })
 

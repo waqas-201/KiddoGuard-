@@ -109,7 +109,7 @@ export default function SafeAppsSelection() {
 
             const data = await res.json();
             setLoadingProgress(0.95);
-            return data.apps;
+            return data?.apps;
         },
         onSuccess: (result, newApps) => {
             const safePackages = new Set(result.map((x: any) => x.packageName));

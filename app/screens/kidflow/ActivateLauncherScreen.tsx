@@ -12,9 +12,9 @@ export default function ActivateLauncherScreen() {
     useEffect(() => {
         const checkLauncherStatus = async () => {
             const isLauncher = await isDefaultLauncher();
-            if (isLauncher) {
-                navigation.navigate('Congrats')
-            }
+            // if (isLauncher) {
+            //     navigation.navigate('Congrats')
+            // }
         };
         checkLauncherStatus();
     }, []);

@@ -7,7 +7,6 @@ import ProfileCreatedScreen from "../screens/kidflow/ProfileCreatedScreen";
 import SafeAppsSelection from "../screens/kidflow/SafeAppsSelection";
 import SetTimeLimitScreen from "../screens/kidflow/SetTimeLimitScreen";
 
-
 const Stack = createNativeStackNavigator();
 
 export default function KidFlowStack() {

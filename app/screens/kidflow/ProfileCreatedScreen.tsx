@@ -48,7 +48,7 @@ export default function ProfileCreatedScreen() {
                 name: name!, // now guaranteed to be string
                 age: age!, // now guaranteed to be number
                 embedding: embedding!, // now guaranteed to be string
-                timeLimit: timeLimit!, // now guaranteed to be number
+                dailyLimitSeconds: timeLimit!, // now guaranteed to be number
                 isKidProfileCompleted: isCompleted!,
                 parentId: parentId!,
             });
@@ -60,7 +60,10 @@ export default function ProfileCreatedScreen() {
             }
 
         } catch (error) {
-            navigation.navigate('AddKid')
+
+            //TODO add retry logic 
+            console.log(error);
+
         }
     };
 

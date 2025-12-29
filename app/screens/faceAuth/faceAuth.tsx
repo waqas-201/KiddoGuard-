@@ -1,6 +1,6 @@
 import { useStartup } from "@/app/navigation/StartupContext";
 import { db } from "@/db/db";
-import { childTable, parentTable } from "@/db/schema";
+import { childTable } from "@/db/schema";
 import { setUser } from "@/features/sessionSlice";
 import { getImageEmbeddingAsync, loadModelAsync } from "@/modules/expo-face-embedder";
 import React, { useEffect, useRef, useState } from "react";
@@ -8,14 +8,15 @@ import { StyleSheet, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    Camera as VisionCamera,
     useCameraDevice,
     useCameraPermission,
     useFrameProcessor,
+    Camera as VisionCamera,
 } from "react-native-vision-camera";
 import { Face, FrameFaceDetectionOptions, useFaceDetector } from "react-native-vision-camera-face-detector";
 import { Worklets } from "react-native-worklets-core";
 import { useDispatch } from "react-redux";
+import { startChildTimer } from '../../../services/timeLimit/timeSync';
 
 function cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) return NaN;
@@ -148,40 +149,40 @@ export default function FaceAuth() {
             /* ============================
                            1️⃣ TRY PARENT FIRST
                            ============================ */
-            const parent = await db.select().from(parentTable).get();
-            let parentMatched = false;
+            // const parent = await db.select().from(parentTable).get();
+            // let parentMatched = false;
 
-            if (parent?.embedding) {
-                const parentEmbedding: number[][] = JSON.parse(parent.embedding);
-
-
-
-                for (const emb of parentEmbedding) {
-                    const score = cosineSimilarity(currentEmbedding, emb);
-                    console.log("🧠 Parent similarity:", score);
-
-                    if (!Number.isNaN(score) && score >= THRESHOLD) {
-                        parentMatched = true;
-                        break;
-                    }
-                }
-
-                if (parentMatched) {
-                    console.log("👨 Parent matched:", parent);
-                    dispatch(setUser({
-                        id: parent.id,
-                        role: "parent",
-                        name: parent.name
-                    }));
-                    refreshStartup()
-                    setStatus("success");
-
-                    setMessage("✅ Parent recognized");
-                    return;
-                }
+            // if (parent?.embedding) {
+            //     const parentEmbedding: number[][] = JSON.parse(parent.embedding);
 
 
-            }
+
+            //     for (const emb of parentEmbedding) {
+            //         const score = cosineSimilarity(currentEmbedding, emb);
+            //         console.log("🧠 Parent similarity:", score);
+
+            //         if (!Number.isNaN(score) && score >= THRESHOLD) {
+            //             parentMatched = true;
+            //             break;
+            //         }
+            //     }
+
+            //     if (parentMatched) {
+            //         console.log("👨 Parent matched:", parent);
+            //         dispatch(setUser({
+            //             id: parent.id,
+            //             role: "parent",
+            //             name: parent.name
+            //         }));
+            //         refreshStartup()
+            //         setStatus("success");
+
+            //         setMessage("✅ Parent recognized");
+            //         return;
+            //     }
+
+
+            // }
 
             /* ============================
                2️⃣ TRY CHILDREN
@@ -205,9 +206,12 @@ export default function FaceAuth() {
                             role: "child",
                             name: child.name,
                             age: child.age,
-                            timeLimit: child.timeLimit,
+                            timeLimit: child.dailyLimitSeconds,
                             parentId: child.parentId
                         }));
+
+                        await startChildTimer(child.id);
+
                         setMessage(`✅ ${child.name} recognized`);
                         refreshStartup()
 

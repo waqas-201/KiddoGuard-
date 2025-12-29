@@ -10,6 +10,8 @@ import m0005 from './0005_special_magdalene.sql';
 import m0006 from './0006_tense_daimon_hellstrom.sql';
 import m0007 from './0007_goofy_sharon_carter.sql';
 import m0008 from './0008_polite_stardust.sql';
+import m0009 from './0009_superb_hellcat.sql';
+import m0010 from './0010_dapper_black_tarantula.sql';
 
   export default {
     journal,
@@ -22,7 +24,9 @@ m0004,
 m0005,
 m0006,
 m0007,
-m0008
+m0008,
+m0009,
+m0010
     }
   }
   
