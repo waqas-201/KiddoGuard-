@@ -173,7 +173,7 @@
 import { useDatabaseReady } from "@/db/db";
 import { setTimeExhausted } from "@/features/restrictionSlice";
 import { requireReauth, resetSession } from "@/features/sessionSlice";
-import { isServiceEnabled, listenOnChange, openAccessibilitySettings } from "@/modules/expo-app-monitor"; // Added openAccessibilitySettings
+import { bringAppToFront, isServiceEnabled, listenOnChange, openAccessibilitySettings } from "@/modules/expo-app-monitor"; // Added openAccessibilitySettings
 import { listenScreenState } from "@/modules/expo-screen-check";
 import TimelimitModule from "@/modules/expo-TimeLimit/src/TimelimitModule";
 import { handleTimeExpiration, stopAndSaveChildTimer } from "@/services/timeLimit/timeSync";
@@ -198,25 +198,40 @@ export default function AppNavigator() {
     const { success, error } = useDatabaseReady();
     const { startup, refreshStartup } = useStartup();
     const user = useSelector((state: RootState) => state.session.currentUser)
-    const userRef = useRef(user);
     const dispatch = useDispatch();
 
     // --- ACCESSIBILITY STATE ---
     const [isAccessibilityEnabled, setIsAccessibilityEnabled] = useState(true);
+    // Create a ref to track the latest user value
+    const userRef = useRef(user);
 
+    // Keep the ref in sync with the selector
     useEffect(() => {
         userRef.current = user;
     }, [user]);
-
     // 1. Screen State Listener
+    const currentUser = userRef.current;
     useEffect(() => {
         const sub = listenScreenState(async (state) => {
             if (state === "OFF") {
-                if (user?.role === 'child') {
-                    await stopAndSaveChildTimer(user.id);
+
+                console.log('off dettected /////////////////////////////////////s');
+
+
+                if (currentUser?.role === 'child') {
+                    await stopAndSaveChildTimer(currentUser.id);
                 }
                 dispatch(requireReauth());
+
+                console.log('....................... session restet');
+
                 dispatch(resetSession());
+
+
+                console.log(currentUser);
+
+                console.log('....................... session restet');
+
             }
         });
         return () => sub.remove();
@@ -240,36 +255,40 @@ export default function AppNavigator() {
     }, [user]);
 
     // 3. ACCESSIBILITY MONITORING & JUMP-IN PREP
+    // 3. Accessibility & App Blocking Logic
     useEffect(() => {
         const checkPermission = async () => {
             const enabled = await isServiceEnabled();
             setIsAccessibilityEnabled(enabled);
-            console.log("Is Accessibility Enabled?:", enabled);
         };
 
         checkPermission();
 
-        // Re-check when user returns from settings
-        const appStateSub = AppState.addEventListener("change", (nextAppState) => {
-            if (nextAppState === "active") {
-                checkPermission();
+        const subscription = listenOnChange(async (packageName) => {
+            // ALWAYS access .current inside the callback
+            const activeUser = userRef.current;
+
+            console.log("📱 App Event:", packageName, "User:", activeUser?.name || 'None');
+
+            /* LOGIC: If there is NO user (unauthenticated), 
+               and they try to leave the app (to System UI or Settings),
+               pull them back to FaceAuth.
+            */
+            if (!activeUser) {
+                console.log("Blocking access: No user authenticated");
+                await bringAppToFront();
             }
         });
 
-        const subscription = listenOnChange((packageName) => {
-            console.log("📱 App Event Detected:", packageName);
-
-            // if (!user) {
-            // // i just wansn sh alert insted of opent taht app 
-            // }
-            // Logic for Milestone 2 (bringAppToFront) will go here next
+        const appStateSub = AppState.addEventListener("change", (next) => {
+            if (next === "active") checkPermission();
         });
 
         return () => {
             subscription.remove();
             appStateSub.remove();
         };
-    }, []);
+    }, []); // Empty array is fine because we use userRef.current inside
 
     const flow = useNavigationFlow(startup);
 
