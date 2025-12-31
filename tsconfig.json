@@ -25,7 +25,8 @@
     "app/navigation/**/*",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "/services"
+    "/services",
+    "/services/kid"
   ],
   "exclude": [
     "**/__tests__/*",

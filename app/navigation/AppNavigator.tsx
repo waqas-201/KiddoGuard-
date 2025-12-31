@@ -182,6 +182,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect, useRef, useState } from "react";
 import { AppState, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
+import { PermissionService } from '../../services/kid/PermissionService';
 import ActivateLauncherModal from "../components/ActivateLauncherModal";
 import FaceAuthStack from "./faceAuthStack";
 import KidFlowStack from "./KidFlowStack";
@@ -278,6 +279,19 @@ export default function AppNavigator() {
                 console.log("Blocking access: No user authenticated");
                 await bringAppToFront();
             }
+
+
+            if (activeUser?.role === 'child') {
+                const isAllowed = PermissionService.isAllowed(packageName)
+                console.log(' is this app allowed  for kid ', isAllowed);
+                if (!isAllowed) {
+                    await bringAppToFront();
+
+                }
+
+            }
+
+
         });
 
         const appStateSub = AppState.addEventListener("change", (next) => {
