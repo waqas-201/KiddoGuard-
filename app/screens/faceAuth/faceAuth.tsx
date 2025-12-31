@@ -1,6 +1,6 @@
 import { useStartup } from "@/app/navigation/StartupContext";
 import { db } from "@/db/db";
-import { childTable } from "@/db/schema";
+import { childTable, parentTable } from "@/db/schema";
 import { setUser } from "@/features/sessionSlice";
 import { getImageEmbeddingAsync, loadModelAsync } from "@/modules/expo-face-embedder";
 import React, { useEffect, useRef, useState } from "react";
@@ -149,40 +149,40 @@ export default function FaceAuth() {
             /* ============================
                            1️⃣ TRY PARENT FIRST
                            ============================ */
-            // const parent = await db.select().from(parentTable).get();
-            // let parentMatched = false;
+            const parent = await db.select().from(parentTable).get();
+            let parentMatched = false;
 
-            // if (parent?.embedding) {
-            //     const parentEmbedding: number[][] = JSON.parse(parent.embedding);
-
-
-
-            //     for (const emb of parentEmbedding) {
-            //         const score = cosineSimilarity(currentEmbedding, emb);
-            //         console.log("🧠 Parent similarity:", score);
-
-            //         if (!Number.isNaN(score) && score >= THRESHOLD) {
-            //             parentMatched = true;
-            //             break;
-            //         }
-            //     }
-
-            //     if (parentMatched) {
-            //         console.log("👨 Parent matched:", parent);
-            //         dispatch(setUser({
-            //             id: parent.id,
-            //             role: "parent",
-            //             name: parent.name
-            //         }));
-            //         refreshStartup()
-            //         setStatus("success");
-
-            //         setMessage("✅ Parent recognized");
-            //         return;
-            //     }
+            if (parent?.embedding) {
+                const parentEmbedding: number[][] = JSON.parse(parent.embedding);
 
 
-            // }
+
+                for (const emb of parentEmbedding) {
+                    const score = cosineSimilarity(currentEmbedding, emb);
+                    console.log("🧠 Parent similarity:", score);
+
+                    if (!Number.isNaN(score) && score >= THRESHOLD) {
+                        parentMatched = true;
+                        break;
+                    }
+                }
+
+                if (parentMatched) {
+                    console.log("👨 Parent matched:", parent);
+                    dispatch(setUser({
+                        id: parent.id,
+                        role: "parent",
+                        name: parent.name
+                    }));
+                    refreshStartup()
+                    setStatus("success");
+
+                    setMessage("✅ Parent recognized");
+                    return;
+                }
+
+
+            }
 
             /* ============================
                2️⃣ TRY CHILDREN

@@ -1,12 +1,25 @@
-// modules/expo-app-monitor.ts
 import ExpoAppMonitorModule from './src/ExpoAppMonitorModule';
 
 export const listenOnChange = (callback: (value: string) => void) => {
-    const sub = ExpoAppMonitorModule.addListener('onChange', (event: any) => {
+    // Standard Expo event listener
+    return ExpoAppMonitorModule.addListener('onChange', (event: { value: string }) => {
         callback(event.value);
     });
-    return sub; // call sub.remove() when cleaning up
 };
 
-export const sendTestEvent = () => ExpoAppMonitorModule.setValueAsync();
-export const isServiceEnabled = () => ExpoAppMonitorModule.isServiceEnabled();
+export const isServiceEnabled = async () => {
+    return await ExpoAppMonitorModule.isServiceEnabled();
+};
+
+export const openAccessibilitySettings = async () => {
+    return await ExpoAppMonitorModule.openAccessibilitySettings();
+};
+
+// New function for Milestone 2
+export const bringAppToFront = async () => {
+    return await ExpoAppMonitorModule.bringAppToFront();
+};
+
+export const sendTestEvent = async () => {
+    return await ExpoAppMonitorModule.setValueAsync();
+};

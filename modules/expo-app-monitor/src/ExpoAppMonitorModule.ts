@@ -1,14 +1,13 @@
 import { NativeModule, requireNativeModule } from 'expo';
-
 import { ExpoAppMonitorModuleEvents } from './ExpoAppMonitor.types';
 
 declare class ExpoAppMonitorModule extends NativeModule<ExpoAppMonitorModuleEvents> {
-
-  setValueAsync(): Promise<void>;       // async function
-  isServiceEnabled(): boolean
-
-
+  setValueAsync(): Promise<string>;
+  // AsyncFunctions always return Promises in the JS bridge
+  isServiceEnabled(): Promise<boolean>;
+  openAccessibilitySettings(): Promise<void>;
+  // Add the new Milestone 2 function
+  bringAppToFront(): Promise<boolean>;
 }
 
-// This call loads the native module object from the JSI.
 export default requireNativeModule<ExpoAppMonitorModule>('ExpoAppMonitor');
