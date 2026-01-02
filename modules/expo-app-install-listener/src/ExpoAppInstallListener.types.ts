@@ -4,14 +4,15 @@ export type OnLoadEventPayload = {
   url: string;
 };
 
-
-
+// This payload is shared by both Install and Uninstall events
 export type AppInstalledEventPayload = {
   packageName: string;
 };
 
+// Update this interface to include the removal event
 export type ExpoAppInstallListenerModuleEvents = {
   onAppInstalled: (event: AppInstalledEventPayload) => void;
+  onAppRemoved: (event: AppInstalledEventPayload) => void; // 👈 Add this
 };
 
 export type ChangeEventPayload = {

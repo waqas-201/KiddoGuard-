@@ -146,35 +146,24 @@ export default function SafeAppsSelection() {
     const saveAppsMutation = useMutation({
 
         mutationFn: async (allApps: AppItem[]) => {
-            // 1. get all package names from DB
-            const appNamesFromDb = await db
-                .select({ packageName: appTable.packageName })
-                .from(appTable);
+            // We remove the dbPackageSet check so that we can 
+            // update apps that ARE already in the DB.
 
-            const dbPackageSet = new Set(
-                appNamesFromDb.map(row => row.packageName)
-            );
-
-            // 2. find apps that are not in DB
-            const newApps = allApps.filter(
-                app => !dbPackageSet.has(app.packageName)
-            );
-
-            console.log("New apps to insert:", newApps.length);
-
-            // 3. nothing new → exit
-            if (newApps.length === 0) return;
-
-            // 4. insert only new apps
-            await db.insert(appTable).values(
-                newApps.map(app => ({
-                    packageName: app.packageName,
-                    appName: app.appName,
-                    versionName: app.versionName ?? null,
-                    icon: app.icon,
-                    isKidSafe: !!app.isKidSafe,
-                }))
-            );
+            for (const app of allApps) {
+                await db.insert(appTable)
+                    .values({
+                        packageName: app.packageName,
+                        appName: app.appName,
+                        icon: app.icon,
+                        isKidSafe: !!app.isKidSafe,
+                    })
+                    .onConflictDoUpdate({
+                        target: appTable.packageName,
+                        set: {
+                            isKidSafe: !!app.isKidSafe // This ensures your toggle is SAVED
+                        }
+                    });
+            }
         }
         ,
         onSuccess: () => navigation.navigate("ProfileCreatedScreen"),

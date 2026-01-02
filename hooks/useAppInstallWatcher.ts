@@ -1,28 +1,25 @@
-// @/hooks/useAppInstallWatcher.ts
-
+// @/hooks/useAppLifecycleWatcher.ts
 import { useEffect } from 'react';
-import { addAppInstallListener } from '../modules/expo-app-install-listener';
-import { handleNewAppInstalled } from '../services/parent/AppDiscoveryService';
+import { addAppInstallListener, addAppUninstallListener } from '../modules/expo-app-install-listener';
+import { handleAppUninstalled, handleNewAppInstalled } from '../services/parent/AppDiscoveryService';
 
-export const useAppInstallWatcher = () => {
+export const useAppLifecycleWatcher = () => {
     useEffect(() => {
-        // Subscribe to the native event
-        const subscription = addAppInstallListener(async (event) => {
-            console.log(`[Watcher] New package detected: ${event.packageName}`);
-
-            try {
-                // Call the service that handles DB + AI Classification
-              const result =   await handleNewAppInstalled(event.packageName);
-              console.log(   'handle app installed result ',    result);
-              
-            } catch (error) {
-                console.error(`[Watcher] Error processing ${event.packageName}:`, error);
-            }
+        // 1. Subscribe to Installs
+        const installSub = addAppInstallListener(async (event) => {
+            console.log(`[Watcher] Install detected: ${event.packageName}`);
+            await handleNewAppInstalled(event.packageName);
         });
 
-        // Cleanup on unmount
+        // 2. Subscribe to Uninstalls
+        const uninstallSub = addAppUninstallListener(async (event) => {
+            console.log(`[Watcher] Uninstall detected: ${event.packageName}`);
+            await handleAppUninstalled(event.packageName);
+        });
+
         return () => {
-            subscription.remove();
+            installSub.remove();
+            uninstallSub.remove();
         };
     }, []);
 };

@@ -1,83 +1,84 @@
+// @/navigation/AppNavigator.tsx
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import React, { useEffect, useState } from "react";
+import { AppState, StyleSheet, Text, View } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
-
-
-
-//v2 
-import { useDatabaseReady } from "@/db/db";
+// State & Logic
+import { db, useDatabaseReady } from "@/db/db";
 import { setTimeExhausted } from "@/features/restrictionSlice";
 import { requireReauth, resetSession } from "@/features/sessionSlice";
-import { useAppInstallWatcher } from "@/hooks/useAppInstallWatcher";
-import { bringAppToFront, isServiceEnabled, listenOnChange, openAccessibilitySettings } from "@/modules/expo-app-monitor"; // Added openAccessibilitySettings
+import { RootState } from "@/store";
+import { useStartup } from "./StartupContext";
+import { useNavigationFlow } from "./useNavigationFlow";
+
+// Modules & Services
+import { isServiceEnabled } from "@/modules/expo-app-monitor";
 import { listenScreenState } from "@/modules/expo-screen-check";
 import TimelimitModule from "@/modules/expo-TimeLimit/src/TimelimitModule";
 import { handleTimeExpiration, stopAndSaveChildTimer } from "@/services/timeLimit/timeSync";
-import { RootState } from "@/store";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useEffect, useRef, useState } from "react";
-import { AppState, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { PermissionService } from '../../services/kid/PermissionService';
+
+// Hooks & Components
+import { useAppLifecycleWatcher } from "@/hooks/useAppInstallWatcher";
+import { AccessibilityGuard } from "../components/AccessibilityGuard";
 import ActivateLauncherModal from "../components/ActivateLauncherModal";
+
+// Stacks
+import { appTable } from "@/db/schema";
+import { useSecurityGuard } from "@/hooks/useSecurityGuard";
 import FaceAuthStack from "./faceAuthStack";
 import KidFlowStack from "./KidFlowStack";
 import LauncherStack from "./LauncherStack";
 import ParentFlowStack from "./ParentFlowStack";
-import { useStartup } from "./StartupContext";
 import Tabs from "./TabsNavigator";
 import TimesUpStack from "./TImesUpStack";
-import { useNavigationFlow } from "./useNavigationFlow";
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+    const dispatch = useDispatch();
     const { success, error } = useDatabaseReady();
     const { startup, refreshStartup } = useStartup();
-    const user = useSelector((state: RootState) => state.session.currentUser)
-    const dispatch = useDispatch();
-    useAppInstallWatcher()
-    // --- ACCESSIBILITY STATE ---
-    const [isAccessibilityEnabled, setIsAccessibilityEnabled] = useState(true);
-    // Create a ref to track the latest user value
-    const userRef = useRef(user);
+    const user = useSelector((state: RootState) => state.session.currentUser);
+    const flow = useNavigationFlow(startup);
 
-    // Keep the ref in sync with the selector
+    // --- MILESTONE 1: Setup Status ---
+    const isSetupComplete = startup?.isDefaultLauncher && startup.isParentProfileCompleted && startup.isKidProfileCompleted as boolean
+
+    // --- MILESTONE 2: Accessibility Status ---
+    const [isAccessOn, setIsAccessOn] = useState(false);
+
     useEffect(() => {
-        userRef.current = user;
-    }, [user]);
-    // 1. Screen State Listener
-    const currentUser = userRef.current;
+        if (!isSetupComplete) return;
+        const check = async () => setIsAccessOn(await isServiceEnabled());
+        check();
+        const sub = AppState.addEventListener("change", (s) => s === "active" && check());
+        return () => sub.remove();
+    }, [isSetupComplete]);
 
+    // --- MILESTONE 3: Guardian Logic ---
+    // Monitoring only starts if Setup is Done AND Permission is Granted
+    useAppLifecycleWatcher(); // Always runs (Installs/Uninstalls)
+    useSecurityGuard(user, isSetupComplete && isAccessOn);
+
+    // --- MILESTONE 4: Screen/Timer Listeners ---
     useEffect(() => {
         const sub = listenScreenState(async (state) => {
+
+            const apps = await db.select().from(appTable)
+
+            console.log(apps.length);
+
+
             if (state === "OFF") {
-
-                console.log('off dettected /////////////////////////////////////s');
-
-
-                if (currentUser?.role === 'child') {
-                    await stopAndSaveChildTimer(currentUser.id);
-                }
+                if (user?.role === 'child') await stopAndSaveChildTimer(user.id);
                 dispatch(requireReauth());
-
-                console.log('....................... session restet');
-
                 dispatch(resetSession());
-
-
-                console.log(currentUser);
-
-                console.log('....................... session restet');
-
             }
         });
         return () => sub.remove();
     }, [user]);
 
-    useEffect(() => {
-        if (success) refreshStartup();
-    }, [success]);
-
-    // 2. Timer Expiration Listener
     useEffect(() => {
         const expireSub = TimelimitModule.addListener('onTimeExpired', async () => {
             if (user?.role === "child") {
@@ -90,61 +91,7 @@ export default function AppNavigator() {
         return () => expireSub.remove();
     }, [user]);
 
-    // 3. ACCESSIBILITY MONITORING & JUMP-IN PREP
-    // 3. Accessibility & App Blocking Logic
-    useEffect(() => {
-
-
-
-        const checkPermission = async () => {
-            const enabled = await isServiceEnabled();
-            setIsAccessibilityEnabled(enabled);
-        };
-
-        checkPermission();
-
-        const subscription = listenOnChange(async (packageName) => {
-            // ALWAYS access .current inside the callback
-            const activeUser = userRef.current;
-
-            console.log("📱 App Event:", packageName, "User:", activeUser?.name || 'None');
-
-            /* LOGIC: If there is NO user (unauthenticated), 
-               and they try to leave the app (to System UI or Settings),
-               pull them back to FaceAuth.
-            */
-            if (!activeUser) {
-                console.log("Blocking access: No user authenticated");
-                await bringAppToFront();
-            }
-
-
-            if (activeUser?.role === 'child') {
-                const isAllowed = PermissionService.isAllowed(packageName)
-                console.log(' is this app allowed  for kid ', isAllowed);
-                if (!isAllowed) {
-                    await bringAppToFront();
-
-                }
-
-            }
-
-
-        });
-
-        const appStateSub = AppState.addEventListener("change", (next) => {
-            if (next === "active") checkPermission();
-        });
-
-        return () => {
-            subscription.remove();
-            appStateSub.remove();
-        };
-    }, []); // Empty array is fine because we use userRef.current inside
-    const flow = useNavigationFlow(startup);
-    // --- MODAL VISIBILITY LOGIC ---
-    const showLauncherModal = flow === "SET_APP_AS_DEFAULT_LAUNCHER";
-    const showAccessibilityModal = !isAccessibilityEnabled && !showLauncherModal && flow !== "LOADING";
+    useEffect(() => { if (success) refreshStartup(); }, [success]);
 
     if (error) return <View style={styles.center}><Text>DB Error</Text></View>;
     if (flow === "LOADING") return <View style={styles.center}><Text>Loading...</Text></View>;
@@ -160,41 +107,16 @@ export default function AppNavigator() {
                 <Stack.Screen name="KidFlow" component={KidFlowStack} />
             </Stack.Navigator>
 
-            {/* Default Launcher Modal */}
             <ActivateLauncherModal
-                visible={showLauncherModal}
+                visible={flow === "SET_APP_AS_DEFAULT_LAUNCHER"}
                 onClose={refreshStartup}
             />
 
-            {/* Milestone 1: Accessibility Simple Modal */}
-            <Modal visible={showAccessibilityModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Permission Required</Text>
-                        <Text style={styles.modalBody}>
-                            To keep this device secure, you must enable the
-                            <Text style={{ fontWeight: 'bold' }}> KidAppAccessService </Text>
-                            in Accessibility settings.
-                        </Text>
-                        <TouchableOpacity
-                            style={styles.modalButton}
-                            onPress={() => openAccessibilitySettings()}
-                        >
-                            <Text style={styles.buttonText}>Open Settings</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <AccessibilityGuard isSetupComplete={isSetupComplete} />
         </>
     );
 }
 
 const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-    modalContent: { backgroundColor: 'white', padding: 25, borderRadius: 20, alignItems: 'center', width: '100%' },
-    modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, color: '#d32f2f' },
-    modalBody: { fontSize: 16, textAlign: 'center', marginBottom: 25, lineHeight: 22, color: '#333' },
-    modalButton: { backgroundColor: '#d32f2f', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 10 },
-    buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 }
 });

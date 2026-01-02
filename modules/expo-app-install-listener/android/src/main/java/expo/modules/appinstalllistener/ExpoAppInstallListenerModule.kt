@@ -13,33 +13,41 @@ class ExpoAppInstallListenerModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ExpoAppInstallListener")
 
-    // Define the event name JS will listen to
-    Events("onAppInstalled")
+    // 1. Register both event names for JS
+    Events("onAppInstalled", "onAppRemoved")
 
     OnCreate {
       val filter = IntentFilter().apply {
-        addAction(Intent.ACTION_PACKAGE_ADDED)
-        addDataScheme("package")
+          addAction(Intent.ACTION_PACKAGE_ADDED)
+          addAction(Intent.ACTION_PACKAGE_REMOVED) // 2. Add the Remove action
+          addDataScheme("package")
       }
 
       receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-          // ACTION_PACKAGE_ADDED fires for new installs and updates
-          // EXTRA_REPLACING is true if it's just an update/reinstall
           val isReplacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+          val packageName = intent.dataString?.replace("package:", "")
           
-          if (intent.action == Intent.ACTION_PACKAGE_ADDED && !isReplacing) {
-            val packageName = intent.dataString?.replace("package:", "")
-            packageName?.let {
-              sendEvent("onAppInstalled", mapOf(
-                "packageName" to it
-              ))
+          if (packageName == null) return
+
+          // 3. Handle logic based on action type
+          when (intent.action) {
+            Intent.ACTION_PACKAGE_ADDED -> {
+              // Only fire if it's a fresh install, not an update
+              if (!isReplacing) {
+                sendEvent("onAppInstalled", mapOf("packageName" to packageName))
+              }
+            }
+            Intent.ACTION_PACKAGE_REMOVED -> {
+              // Only fire if it's a full uninstall, not part of an update/replace
+              if (!isReplacing) {
+                sendEvent("onAppRemoved", mapOf("packageName" to packageName))
+              }
             }
           }
         }
       }
 
-      // Register the receiver dynamically
       appContext.reactContext?.registerReceiver(receiver, filter)
     }
 

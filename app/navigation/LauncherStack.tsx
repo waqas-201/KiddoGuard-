@@ -7,7 +7,7 @@ const Stack = createNativeStackNavigator();
 
 export default function LauncherStack() {
     return (
-
+        <>
 
         <Stack.Navigator screenOptions={{ headerShown: false }}>
 
@@ -15,5 +15,12 @@ export default function LauncherStack() {
             <Stack.Screen name="KidSafeLauncherScreen" component={KidSafeLauncherScreen} />
 
         </Stack.Navigator>
+
+
+
+
+        </>
+
+
     );
 }

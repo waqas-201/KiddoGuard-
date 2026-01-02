@@ -15,6 +15,7 @@ export function useNavigationFlow(startup: StartupState | null) {
     // 1. App is still initializing DB/Storage
     if (!startup) return 'LOADING';
     // when device locked 
+
     // 2. Rule: First time load / Setup not done
     if (!startup.isParentProfileCompleted) return 'ONBOARDING';
 
