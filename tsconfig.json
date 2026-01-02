@@ -7,13 +7,11 @@
     ],
     "jsx": "react-native",
     "strict": true,
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "build",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
@@ -21,18 +19,21 @@
     }
   },
   "include": [
-    "src/**/*",
-    "app/navigation/**/*",
+    "app/**/*",
+    "db/**/*",
+    "services/**/*",
+    "constents/**/*",
+    "hooks/**/*",
+    "modules/**/*",
+    "features/**/*",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "/services",
-    "/services/kid"
+    "index.tsx"
   ],
   "exclude": [
-    "**/__tests__/*",
-    "**/__mocks__/*",
-    "**/__rsc_tests__/*",
-    "node_modules"
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js"
   ],
   "extends": "expo/tsconfig.base"
 }

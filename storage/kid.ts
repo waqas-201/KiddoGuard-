@@ -39,6 +39,7 @@ export type roleType = {
 }
 export async function getAllPackages(role: string | undefined): Promise<AppItem[] | []> {
 
+    console.log('getting package again .................................................................................');
 
     try {
         const rows = await db.select().from(appTable);

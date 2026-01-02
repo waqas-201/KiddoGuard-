@@ -51,6 +51,18 @@ class ExpoInstalledAppsModule : Module() {
     }
 }
 
+AsyncFunction("getAppLabel") { packageName: String, promise: Promise ->
+    try {
+        val context = appContext.reactContext ?: throw Exception("Context is null")
+        val pm: PackageManager = context.packageManager
+        val appInfo = pm.getApplicationInfo(packageName, 0)
+        val label = pm.getApplicationLabel(appInfo).toString()
+        promise.resolve(label)
+    } catch (e: Exception) {
+        promise.resolve(packageName) // Fallback to package name
+    }
+}
+
     // Get icon for a single package on demand
     AsyncFunction("getAppIcon") { packageName: String, promise: Promise ->
       try {

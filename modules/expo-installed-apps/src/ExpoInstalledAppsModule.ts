@@ -6,6 +6,7 @@ declare class ExpoInstalledAppsModule extends NativeModule<ExpoInstalledAppsModu
 
   getInstalledApps: () => Promise<string>;
   getAppIcon: (packageName: string) => Promise<string>;
+  getAppLabel: (packageName: string) => Promise<string>;
 }
 
 // This call loads the native module object from the JSI.
