@@ -12,6 +12,7 @@ import m0007 from './0007_goofy_sharon_carter.sql';
 import m0008 from './0008_polite_stardust.sql';
 import m0009 from './0009_superb_hellcat.sql';
 import m0010 from './0010_dapper_black_tarantula.sql';
+import m0011 from './0011_early_ultron.sql';
 
   export default {
     journal,
@@ -26,7 +27,8 @@ m0006,
 m0007,
 m0008,
 m0009,
-m0010
+m0010,
+m0011
     }
   }
   

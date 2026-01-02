@@ -136,7 +136,7 @@ export default function SecureAccountSetup() {
                 setStatus("success");
                 parentDraft.set('isParentProfileCompleted', true)
                 setMessage("✅ All 3 face scans completed successfully! Redirecting...");
-                setTimeout(() => navigation.replace('SaveParentProfileScreen'), 1000);
+                setTimeout(() => navigation.replace('SecurityLayersSetup'), 1000);
             }
         }
     });

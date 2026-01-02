@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
+import { SecretGestureWrapper } from "../components/SecretGestureWrapper";
 import FaceAuth from "../screens/faceAuth/faceAuth";
 
 
@@ -11,6 +12,7 @@ export default function FaceAuthStack() {
 
 
     return (
+        <SecretGestureWrapper>
 
         <Stack.Navigator screenOptions={{ headerShown: false }}>
 
@@ -18,5 +20,6 @@ export default function FaceAuthStack() {
             <Stack.Screen name="FaceAuth" component={FaceAuth} />
 
         </Stack.Navigator>
+        </SecretGestureWrapper>
     );
 }

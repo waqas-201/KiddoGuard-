@@ -1,14 +1,21 @@
 import { relations } from "drizzle-orm";
 import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
+// @/db/schema.ts
 
-// 1. Parent Table (Remains the same)
 export const parentTable = sqliteTable("parent_table", {
     id: int().primaryKey({ autoIncrement: true }),
     name: text().notNull(),
-    embedding: text().notNull(),
+    embedding: text().notNull(), // Layer 1: Face (Biometric)
+
+    // Layer 2: Secret PIN (The "Secret Door" PIN)
+    parentPin: text(),
+
+    // Layer 3: Recovery Phrase 
+    recoveryQuestion: text(),
+    recoveryAnswer: text(),
+
     isParentProfileCompleted: int({ mode: "boolean" }).notNull().default(false),
 });
-
 // 2. Child Table (Added Daily Limit in Seconds)
 export const childTable = sqliteTable("child_table", {
     id: int().primaryKey({ autoIncrement: true }),

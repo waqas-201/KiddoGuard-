@@ -6,7 +6,7 @@ export type ParentFlowStackParamList = {
     NameAndGenderScreen: undefined;
     SecureAccountSetup: undefined;
     ParentProfile: undefined;
-    SaveParentProfileScreen: undefined
+    SecurityLayersSetup: undefined
 };
 
 // KidFlow stack
